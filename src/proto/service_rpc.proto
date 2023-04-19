@@ -1,0 +1,73 @@
+// Catalog Service Definition
+service Catalog{
+
+    // lookup method for communication between front end server or order service and catalog service 
+    rpc lookup (lookupRequestMessage) returns (lookupResponseMessage);
+
+    // buy method (order service to catalog service)
+    rpc buy_or_sell_stock (orderRequestMessage) returns (orderResponseMessage);    
+}
+
+message lookupRequestMessage{
+    required string stockname = 1;
+}
+
+enum ERROR_CODES{
+    NO_ERROR = 0;
+    INVALID_STOCKNAME = 1;
+    INTERNAL_ERROR = 2;
+    INSUFFICIENT_QUANTITY = 3;
+    INVALID_REQUEST = 4;
+    INVALID_ORDERNUMBER = 5;
+}
+
+message lookupResponseMessage{
+    required ERROR_CODES error = 1;
+    optional string stockname = 2;
+    optional float price = 3;
+    optional int32 quantity = 4;
+}
+
+message orderRequestMessage{
+    required string stockname = 1;
+    required int32 quantity = 2;
+    required string type = 3;
+}
+
+message orderResponseMessage{
+    required ERROR_CODES error = 1;
+}
+
+message lookupOrderRequestMessage{
+    required int32 order_number = 1;
+} 
+
+message lookupOrderResponseMessage{
+    required ERROR_CODES error = 1;
+    optional int32 number = 2;
+    optional string name = 3;
+    optional string type = 4;
+    optional int32 quantity = 5;  
+}
+
+// Order Service Definition
+service Order{
+
+    // trade method for communication between front-end server and order service
+    rpc trade (tradeRequestMessage) returns (tradeResponseMessage);
+ 
+    // lookup method for communication between front end server and order service 
+    rpc lookupOrder (lookupOrderRequestMessage) returns (lookupOrderResponseMessage);
+}
+
+message tradeRequestMessage{
+    required string stockname = 1;
+    required int32 quantity = 2;
+    required string type = 3;
+}
+
+message tradeResponseMessage{
+    required ERROR_CODES error = 1;
+    optional int32 transaction_number = 2;
+
+}
