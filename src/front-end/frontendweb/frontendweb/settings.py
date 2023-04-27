@@ -31,6 +31,20 @@ CSRF_COOKIE_SECURE=False
 CSRF_COOKIE_HTTPONLY = False
 SESSION_COOKIE_SECURE = False
 
+# Cache time to live is 15 minutes.
+#CACHE_TTL = 60 * 15
+
+#CACHE
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379",
+        "TIMEOUT" : None,
+        "OPTIONS": {"MAX_ENTRIES": 10, "CULL_FREQUENCY": 10},
+    }
+}
+
 # Application definition
 
 INSTALLED_APPS = [

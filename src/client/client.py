@@ -56,7 +56,7 @@ with requests.Session() as session:
         prob = random.random()
         if (stock_quantity > 0 and prob <= p):
             # Send Trade request
-            name = stock_names[random.randint(0, len(stock_names)-1)]
+            name = stock_names[random.randint(0, len(stock_names)-2)]
             type = trade_types[random.randint(0, 1)]
             print ("Sending Trade request for stockname: " + name + " , type: " + type)
             body_json = {"name": name, "quantity": 1, "type": type}

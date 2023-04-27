@@ -1,6 +1,6 @@
 import sys
 sys.path.append("..")
-
+import requests
 import grpc
 import os
 import pandas as pd
@@ -22,8 +22,6 @@ class CatalogService(pb2_grpc.CatalogServicer):
         # load data
         try:
             self.data_file = pd.read_csv("../data/stock_data.csv")
-            self.data_file_rep1 = pd.read_csv("../data_rep1/stock_data.csv")
-            self.data_file_rep2 = pd.read_csv("../data_rep2/stock_data.csv")
         except:
             print("Failed to load files")
             
@@ -84,7 +82,22 @@ class CatalogService(pb2_grpc.CatalogServicer):
                                 self.data_file.to_csv('../data/stock_data.csv', sep=",", index=False)
                             except:
                                 print("Error writing data to file")
-                        # print(f"Buy request successful for {quantity} stocks of {stockname} for $ {(quantity*self.data_file[stockname][0])}.") 
+                        # Send cache invalidation request to front-end service
+                        print("Send cache invalidation request to front-end service")
+                        with requests.Session() as session:
+                            # Send GET request for invalidation
+                            name = stockname
+                            url = "http://127.0.0.1:8000/stocksCache/" + name
+                            response = session.get(url)
+                            data_json_obj = response.json()
+                            #print(data_json_obj)
+                            if data_json_obj.get("data", 0):
+                                # Cache invalidation was succesful and client received JSON reply with top-level data object
+                                print ("Cache Invalidation done")
+                            else:
+                                # Cache invalidation failed
+                                print ("Cache Invalidation failed")
+ 
                         return pb2.orderResponseMessage(error=pb2.NO_ERROR)
                     except:
                         # print(f"Error occured processing request for buying {quantity} {stockname} stocks")
@@ -102,11 +115,27 @@ class CatalogService(pb2_grpc.CatalogServicer):
                                 self.data_file.to_csv('../data/stock_data.csv', sep=",", index=False)    
                             except:
                                 print("Error persisting data")
-                        # print(f"Sell request successful for {quantity} stocks of {stockname} for $ {(quantity*self.data_file[stockname][0])}.") 
+
+                        # Send cache invalidation request to front-end service
+                        print("Send cache invalidation request to front-end service")
+                        with requests.Session() as session:
+                            # Send GET request for invalidation
+                            name = stockname
+                            url = "http://127.0.0.1:8000/stocksCache/" + name
+                            response = session.get(url)
+                            data_json_obj = response.json()
+                            #print(data_json_obj)
+                            if data_json_obj.get("data", 0):
+                                # Cache invalidation was succesful and client received JSON reply with top-level data object
+                                print ("Cache Invalidation done")
+                            else:
+                                # Cache invalidation failed
+                                print ("Cache Invalidation failed")
                         return pb2.orderResponseMessage(error=pb2.NO_ERROR)
                     except:
                         # print(f"Error occured processing request for selling {quantity} {stockname} stocks")
                         return pb2.orderResponseMessage(error=pb2.INTERNAL_ERROR)
+                        
                 return pb2.orderResponseMessage(error=pb2.INTERNAL_ERROR)
             else:
                 return pb2.orderResponseMessage(error=pb2.INTERNAL_ERROR)    
