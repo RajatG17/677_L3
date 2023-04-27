@@ -1,3 +1,5 @@
+import time
+
 import requests
 from getpass import getpass
 import sys
@@ -68,6 +70,8 @@ with requests.Session() as session:
             if response.get("data", 0):
                 transaction_num = response['data']['transaction_number']
                 client_orders.append({"transaction_number": transaction_num, "name": name, "quantity": 1, "type": type})
+
+        time.sleep(5)
 
 print("len(client_orders): " + str(len(client_orders)))
 for client_order in client_orders:

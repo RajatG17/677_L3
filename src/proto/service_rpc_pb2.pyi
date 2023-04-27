@@ -1,35 +1,51 @@
+from google.protobuf.internal import containers as _containers
 from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
-from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
+from typing import ClassVar as _ClassVar, Iterable as _Iterable, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
 INSUFFICIENT_QUANTITY: ERROR_CODES
 INTERNAL_ERROR: ERROR_CODES
-INVALID_ORDERNUMBER: ERROR_CODES
 INVALID_REQUEST: ERROR_CODES
 INVALID_STOCKNAME: ERROR_CODES
 NO_ERROR: ERROR_CODES
 
-class lookupOrderRequestMessage(_message.Message):
-    __slots__ = ["order_number"]
-    ORDER_NUMBER_FIELD_NUMBER: _ClassVar[int]
-    order_number: int
-    def __init__(self, order_number: _Optional[int] = ...) -> None: ...
+class checkMessage(_message.Message):
+    __slots__ = ["ping"]
+    PING_FIELD_NUMBER: _ClassVar[int]
+    ping: str
+    def __init__(self, ping: _Optional[str] = ...) -> None: ...
 
-class lookupOrderResponseMessage(_message.Message):
-    __slots__ = ["error", "name", "number", "quantity", "type"]
+class checkResponse(_message.Message):
+    __slots__ = ["error", "response"]
     ERROR_FIELD_NUMBER: _ClassVar[int]
-    NAME_FIELD_NUMBER: _ClassVar[int]
-    NUMBER_FIELD_NUMBER: _ClassVar[int]
-    QUANTITY_FIELD_NUMBER: _ClassVar[int]
-    TYPE_FIELD_NUMBER: _ClassVar[int]
-    error: ERROR_CODES
-    name: str
-    number: int
-    quantity: int
-    type: str
-    def __init__(self, error: _Optional[_Union[ERROR_CODES, str]] = ..., number: _Optional[int] = ..., name: _Optional[str] = ..., type: _Optional[str] = ..., quantity: _Optional[int] = ...) -> None: ...
+    RESPONSE_FIELD_NUMBER: _ClassVar[int]
+    error: str
+    response: str
+    def __init__(self, response: _Optional[str] = ..., error: _Optional[str] = ...) -> None: ...
+
+class leaderMessage(_message.Message):
+    __slots__ = ["leaderId"]
+    LEADERID_FIELD_NUMBER: _ClassVar[int]
+    leaderId: int
+    def __init__(self, leaderId: _Optional[int] = ...) -> None: ...
+
+class leaderOrderMessage(_message.Message):
+    __slots__ = ["followerIds", "followerPorts", "leaderId"]
+    FOLLOWERIDS_FIELD_NUMBER: _ClassVar[int]
+    FOLLOWERPORTS_FIELD_NUMBER: _ClassVar[int]
+    LEADERID_FIELD_NUMBER: _ClassVar[int]
+    followerIds: _containers.RepeatedScalarFieldContainer[int]
+    followerPorts: _containers.RepeatedScalarFieldContainer[int]
+    leaderId: int
+    def __init__(self, leaderId: _Optional[int] = ..., followerIds: _Optional[_Iterable[int]] = ..., followerPorts: _Optional[_Iterable[int]] = ...) -> None: ...
+
+class leaderResponse(_message.Message):
+    __slots__ = ["result"]
+    RESULT_FIELD_NUMBER: _ClassVar[int]
+    result: bool
+    def __init__(self, result: bool = ...) -> None: ...
 
 class lookupRequestMessage(_message.Message):
     __slots__ = ["stockname"]
@@ -50,14 +66,16 @@ class lookupResponseMessage(_message.Message):
     def __init__(self, error: _Optional[_Union[ERROR_CODES, str]] = ..., stockname: _Optional[str] = ..., price: _Optional[float] = ..., quantity: _Optional[int] = ...) -> None: ...
 
 class orderRequestMessage(_message.Message):
-    __slots__ = ["quantity", "stockname", "type"]
+    __slots__ = ["quantity", "serviceId", "stockname", "type"]
     QUANTITY_FIELD_NUMBER: _ClassVar[int]
+    SERVICEID_FIELD_NUMBER: _ClassVar[int]
     STOCKNAME_FIELD_NUMBER: _ClassVar[int]
     TYPE_FIELD_NUMBER: _ClassVar[int]
     quantity: int
+    serviceId: int
     stockname: str
     type: str
-    def __init__(self, stockname: _Optional[str] = ..., quantity: _Optional[int] = ..., type: _Optional[str] = ...) -> None: ...
+    def __init__(self, stockname: _Optional[str] = ..., quantity: _Optional[int] = ..., type: _Optional[str] = ..., serviceId: _Optional[int] = ...) -> None: ...
 
 class orderResponseMessage(_message.Message):
     __slots__ = ["error"]

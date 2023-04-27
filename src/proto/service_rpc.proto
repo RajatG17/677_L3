@@ -5,7 +5,23 @@ service Catalog{
     rpc lookup (lookupRequestMessage) returns (lookupResponseMessage);
 
     // buy method (order service to catalog service)
-    rpc buy_or_sell_stock (orderRequestMessage) returns (orderResponseMessage);    
+    rpc buy_or_sell_stock (orderRequestMessage) returns (orderResponseMessage);
+
+    rpc setLeader(leaderMessage) returns (leaderResponse);
+    
+}
+
+// Order Service Definition
+service Order{
+
+    // trade method for communication between front-end server and order service
+    rpc trade(tradeRequestMessage) returns (tradeResponseMessage);
+
+    // method to check health of order service
+    rpc healthCheck(checkMessage) returns (checkResponse);
+
+    //metod to set leader of order services
+    rpc setLeader(leaderOrderMessage) returns (leaderResponse);
 }
 
 message lookupRequestMessage{
@@ -18,7 +34,20 @@ enum ERROR_CODES{
     INTERNAL_ERROR = 2;
     INSUFFICIENT_QUANTITY = 3;
     INVALID_REQUEST = 4;
-    INVALID_ORDERNUMBER = 5;
+}
+
+message leaderMessage{
+    required int32 leaderId = 1;
+}
+
+message leaderOrderMessage{
+    required int32 leaderId = 1;
+    repeated int32 followerIds = 2;
+    repeated int32 followerPorts = 3;
+}
+
+message leaderResponse{
+    required bool result = 1;
 }
 
 message lookupResponseMessage{
@@ -32,33 +61,13 @@ message orderRequestMessage{
     required string stockname = 1;
     required int32 quantity = 2;
     required string type = 3;
+    required int32 serviceId = 4;
 }
 
 message orderResponseMessage{
     required ERROR_CODES error = 1;
 }
 
-message lookupOrderRequestMessage{
-    required int32 order_number = 1;
-} 
-
-message lookupOrderResponseMessage{
-    required ERROR_CODES error = 1;
-    optional int32 number = 2;
-    optional string name = 3;
-    optional string type = 4;
-    optional int32 quantity = 5;  
-}
-
-// Order Service Definition
-service Order{
-
-    // trade method for communication between front-end server and order service
-    rpc trade (tradeRequestMessage) returns (tradeResponseMessage);
- 
-    // lookup method for communication between front end server and order service 
-    rpc lookupOrder (lookupOrderRequestMessage) returns (lookupOrderResponseMessage);
-}
 
 message tradeRequestMessage{
     required string stockname = 1;
@@ -70,4 +79,13 @@ message tradeResponseMessage{
     required ERROR_CODES error = 1;
     optional int32 transaction_number = 2;
 
+}
+
+message checkMessage{
+    required string ping = 1;
+}
+
+message checkResponse{
+    optional string response = 1;
+    optional string error = 2;
 }

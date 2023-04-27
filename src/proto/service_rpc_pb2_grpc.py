@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import proto.service_rpc_pb2 as service__rpc__pb2
+from proto import service_rpc_pb2 as service__rpc__pb2
 
 
 class CatalogStub(object):
@@ -25,6 +25,11 @@ class CatalogStub(object):
                 request_serializer=service__rpc__pb2.orderRequestMessage.SerializeToString,
                 response_deserializer=service__rpc__pb2.orderResponseMessage.FromString,
                 )
+        self.setLeader = channel.unary_unary(
+                '/Catalog/setLeader',
+                request_serializer=service__rpc__pb2.leaderMessage.SerializeToString,
+                response_deserializer=service__rpc__pb2.leaderResponse.FromString,
+                )
 
 
 class CatalogServicer(object):
@@ -45,6 +50,12 @@ class CatalogServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def setLeader(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_CatalogServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -57,6 +68,11 @@ def add_CatalogServicer_to_server(servicer, server):
                     servicer.buy_or_sell_stock,
                     request_deserializer=service__rpc__pb2.orderRequestMessage.FromString,
                     response_serializer=service__rpc__pb2.orderResponseMessage.SerializeToString,
+            ),
+            'setLeader': grpc.unary_unary_rpc_method_handler(
+                    servicer.setLeader,
+                    request_deserializer=service__rpc__pb2.leaderMessage.FromString,
+                    response_serializer=service__rpc__pb2.leaderResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -103,6 +119,23 @@ class Catalog(object):
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
+    @staticmethod
+    def setLeader(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/Catalog/setLeader',
+            service__rpc__pb2.leaderMessage.SerializeToString,
+            service__rpc__pb2.leaderResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
 
 class OrderStub(object):
     """Order Service Definition
@@ -119,10 +152,15 @@ class OrderStub(object):
                 request_serializer=service__rpc__pb2.tradeRequestMessage.SerializeToString,
                 response_deserializer=service__rpc__pb2.tradeResponseMessage.FromString,
                 )
-        self.lookupOrder = channel.unary_unary(
-                '/Order/lookupOrder',
-                request_serializer=service__rpc__pb2.lookupOrderRequestMessage.SerializeToString,
-                response_deserializer=service__rpc__pb2.lookupOrderResponseMessage.FromString,
+        self.healthCheck = channel.unary_unary(
+                '/Order/healthCheck',
+                request_serializer=service__rpc__pb2.checkMessage.SerializeToString,
+                response_deserializer=service__rpc__pb2.checkResponse.FromString,
+                )
+        self.setLeader = channel.unary_unary(
+                '/Order/setLeader',
+                request_serializer=service__rpc__pb2.leaderOrderMessage.SerializeToString,
+                response_deserializer=service__rpc__pb2.leaderResponse.FromString,
                 )
 
 
@@ -137,8 +175,15 @@ class OrderServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def lookupOrder(self, request, context):
-        """lookup method for communication between front end server and order service 
+    def healthCheck(self, request, context):
+        """method to check health of order service
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def setLeader(self, request, context):
+        """metod to set leader of order services
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -152,10 +197,15 @@ def add_OrderServicer_to_server(servicer, server):
                     request_deserializer=service__rpc__pb2.tradeRequestMessage.FromString,
                     response_serializer=service__rpc__pb2.tradeResponseMessage.SerializeToString,
             ),
-            'lookupOrder': grpc.unary_unary_rpc_method_handler(
-                    servicer.lookupOrder,
-                    request_deserializer=service__rpc__pb2.lookupOrderRequestMessage.FromString,
-                    response_serializer=service__rpc__pb2.lookupOrderResponseMessage.SerializeToString,
+            'healthCheck': grpc.unary_unary_rpc_method_handler(
+                    servicer.healthCheck,
+                    request_deserializer=service__rpc__pb2.checkMessage.FromString,
+                    response_serializer=service__rpc__pb2.checkResponse.SerializeToString,
+            ),
+            'setLeader': grpc.unary_unary_rpc_method_handler(
+                    servicer.setLeader,
+                    request_deserializer=service__rpc__pb2.leaderOrderMessage.FromString,
+                    response_serializer=service__rpc__pb2.leaderResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -186,7 +236,7 @@ class Order(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def lookupOrder(request,
+    def healthCheck(request,
             target,
             options=(),
             channel_credentials=None,
@@ -196,8 +246,25 @@ class Order(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/Order/lookupOrder',
-            service__rpc__pb2.lookupOrderRequestMessage.SerializeToString,
-            service__rpc__pb2.lookupOrderResponseMessage.FromString,
+        return grpc.experimental.unary_unary(request, target, '/Order/healthCheck',
+            service__rpc__pb2.checkMessage.SerializeToString,
+            service__rpc__pb2.checkResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def setLeader(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/Order/setLeader',
+            service__rpc__pb2.leaderOrderMessage.SerializeToString,
+            service__rpc__pb2.leaderResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

@@ -15,7 +15,7 @@ MAX_WORKER_THRESHOLD = 3
 transaction_number = 0
 
 # get last transaction number from log file if it exists
-with open("../data/transaction_logs.txt", "r") as file:
+with open("../data_rep1/transaction_logs.txt", "r") as file:
     try:
         last_line = file.readlines()[-1]
         if last_line:
@@ -90,7 +90,7 @@ class OrderService(pb2_grpc.OrderServicer):
                                     order_channel.close()
 
                         # open log file and append the latest transaction to it
-                        with open("../data/transaction_logs.txt", "a") as transaction_logs:
+                        with open("../data_rep1/transaction_logs.txt", "a") as transaction_logs:
                             transaction_str = str(f"{transaction_number} - Stockname: {stockname}  Quantity: {quantity} Order: {order_type}, service id: {self.leaderId}, \n")
                             transaction_logs.write(transaction_str)
                         # send appropriate error code (for no error) and transaction number back to front end server
@@ -107,7 +107,7 @@ class OrderService(pb2_grpc.OrderServicer):
         try:
             order_number = int(request.order_number)
             with self.lock.gen_rlock() as rlock:
-                 with open("../data/transaction_logs.txt", "r") as transaction_logs:
+                 with open("../data_rep1/transaction_logs.txt", "r") as transaction_logs:
                      for line in transaction_logs:
                          contents = line.strip().split(" ")
                          transaction_number = int(contents[0])
@@ -164,7 +164,7 @@ if __name__=="__main__":
         id = 1
     MAX_WORKER_THRESHOLD = int(os.getenv("MAX_WORKER_THRESHOLD_ORDER", 5))
     host = os.getenv("ORDER_HOST", "0.0.0.0")
-    port = int(os.getenv("ORDER_PORT", 6001))
+    port = int(os.getenv("ORDER_PORT", 6002))
     print ("Running order service on host: " + host + " , port: " + str(port) + " with id "+ str(id))
     
     serve(id, host, port, MAX_WORKER_THRESHOLD)
