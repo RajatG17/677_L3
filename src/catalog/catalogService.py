@@ -107,12 +107,9 @@ class CatalogService(pb2_grpc.CatalogServicer):
                     except:
                         # print(f"Error occured processing request for selling {quantity} {stockname} stocks")
                         return pb2.orderResponseMessage(error=pb2.INTERNAL_ERROR)
-                return pb2.orderResponseMessage(error=pb2.INTERNAL_ERROR)    
+                return pb2.orderResponseMessage(error=pb2.INTERNAL_ERROR)
             else:
-                print("Follower updatng database..")
-                self.data_file.to_csv("../data_rep1/stock_data.csv", sep=",", index=False)
-                self.data_file.to_csv("../data_rep2/stock_data.csv", sep=",", index=False)
-                return pb2.orderResponseMessage(error=pb2.NO_ERROR)
+                return pb2.orderResponseMessage(error=pb2.INTERNAL_ERROR)    
                 
 def serve(hostname="0.0.0.0", port=6000, max_workers=MAX_WORKER_THRESHOLD):
     print(MAX_WORKER_THRESHOLD)
