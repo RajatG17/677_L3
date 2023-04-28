@@ -22,8 +22,8 @@ class checkResponse(_message.Message):
     ERROR_FIELD_NUMBER: _ClassVar[int]
     RESPONSE_FIELD_NUMBER: _ClassVar[int]
     error: str
-    response: str
-    def __init__(self, response: _Optional[str] = ..., error: _Optional[str] = ...) -> None: ...
+    response: bool
+    def __init__(self, response: bool = ..., error: _Optional[str] = ...) -> None: ...
 
 class leaderMessage(_message.Message):
     __slots__ = ["leaderId"]
@@ -32,14 +32,16 @@ class leaderMessage(_message.Message):
     def __init__(self, leaderId: _Optional[int] = ...) -> None: ...
 
 class leaderOrderMessage(_message.Message):
-    __slots__ = ["followerIds", "followerPorts", "leaderId"]
+    __slots__ = ["followerHosts", "followerIds", "followerPorts", "leaderId"]
+    FOLLOWERHOSTS_FIELD_NUMBER: _ClassVar[int]
     FOLLOWERIDS_FIELD_NUMBER: _ClassVar[int]
     FOLLOWERPORTS_FIELD_NUMBER: _ClassVar[int]
     LEADERID_FIELD_NUMBER: _ClassVar[int]
+    followerHosts: _containers.RepeatedScalarFieldContainer[str]
     followerIds: _containers.RepeatedScalarFieldContainer[int]
     followerPorts: _containers.RepeatedScalarFieldContainer[int]
     leaderId: int
-    def __init__(self, leaderId: _Optional[int] = ..., followerIds: _Optional[_Iterable[int]] = ..., followerPorts: _Optional[_Iterable[int]] = ...) -> None: ...
+    def __init__(self, leaderId: _Optional[int] = ..., followerIds: _Optional[_Iterable[int]] = ..., followerPorts: _Optional[_Iterable[int]] = ..., followerHosts: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class leaderResponse(_message.Message):
     __slots__ = ["result"]
@@ -84,14 +86,16 @@ class orderResponseMessage(_message.Message):
     def __init__(self, error: _Optional[_Union[ERROR_CODES, str]] = ...) -> None: ...
 
 class tradeRequestMessage(_message.Message):
-    __slots__ = ["quantity", "stockname", "type"]
+    __slots__ = ["quantity", "stockname", "transaction_number", "type"]
     QUANTITY_FIELD_NUMBER: _ClassVar[int]
     STOCKNAME_FIELD_NUMBER: _ClassVar[int]
+    TRANSACTION_NUMBER_FIELD_NUMBER: _ClassVar[int]
     TYPE_FIELD_NUMBER: _ClassVar[int]
     quantity: int
     stockname: str
+    transaction_number: int
     type: str
-    def __init__(self, stockname: _Optional[str] = ..., quantity: _Optional[int] = ..., type: _Optional[str] = ...) -> None: ...
+    def __init__(self, stockname: _Optional[str] = ..., quantity: _Optional[int] = ..., type: _Optional[str] = ..., transaction_number: _Optional[int] = ...) -> None: ...
 
 class tradeResponseMessage(_message.Message):
     __slots__ = ["error", "transaction_number"]

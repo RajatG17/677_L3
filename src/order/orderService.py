@@ -86,7 +86,6 @@ class OrderService(pb2_grpc.OrderServicer):
                                 order_channel = grpc.insecure_channel(f"{host}:{port}")
                                 stub = pb2_grpc.OrderStub(order_channel)
                                 result = stub.trade(pb2.tradeRequestMessage(transaction_number=transaction_number, stockname=stockname, quantity=quantity, type=order_type))
-                                print("rsut:", result)
                                 if result.error == pb2.NO_ERROR:
                                     order_channel.close()
                                 else:
@@ -104,9 +103,10 @@ class OrderService(pb2_grpc.OrderServicer):
                         return pb2.tradeResponseMessage(error=status.error) 
                 else:
                     # open log file and append the latest transaction to it
+                    transaction_number = request.transaction_number
                     print("Sync follower")
                     with open(self.file_path+f"transaction_log_{str(self.id)}.txt", "a") as transaction_logs:
-                        transaction_str = str(f"{request.transaction_number} - Stockname: {stockname}  Quantity: {quantity} Order: {order_type}, service id: {self.leaderId}, \n")
+                        transaction_str = str(f"{transaction_number} - Stockname: {stockname}  Quantity: {quantity} Order: {order_type}, service id: {self.leaderId}, \n")
                         transaction_logs.write(transaction_str)
                     return pb2.tradeResponseMessage(error=pb2.NO_ERROR, transaction_number=transaction_number)
             else:   
@@ -138,9 +138,9 @@ class OrderService(pb2_grpc.OrderServicer):
     def healthCheck(self, request, context):
         try:
             if request.ping == "health check":
-                return pb2.checkResponse(response="Service up", error="None")
+                return pb2.checkResponse(response=True, error="None")
         except:
-            return pb2.checkResponse(response="Service down", error="Error")
+            return pb2.checkResponse(response=False, error="Error")
 
     def setLeader(self, request, context):
         try:

@@ -44,6 +44,7 @@ message leaderOrderMessage{
     required int32 leaderId = 1;
     repeated int32 followerIds = 2;
     repeated int32 followerPorts = 3;
+    repeated string followerHosts = 4;
 }
 
 message leaderResponse{
@@ -73,6 +74,7 @@ message tradeRequestMessage{
     required string stockname = 1;
     required int32 quantity = 2;
     required string type = 3;
+    optional int32 transaction_number = 4;
 }
 
 message tradeResponseMessage{
@@ -86,6 +88,6 @@ message checkMessage{
 }
 
 message checkResponse{
-    optional string response = 1;
+    optional bool response = 1 [default=false];
     optional string error = 2;
 }

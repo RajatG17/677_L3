@@ -19,7 +19,7 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
 	def __init__(self, request, client_address, server):
 		# create channel for communicating with catalog service
 		try:
-			catalog_host = os.getenv("CATALOG_HOST", "catalog")
+			catalog_host = os.getenv("CATALOG_HOST", "0.0.0.0")
 			catalog_port = int(os.getenv("CATALOG_PORT", 6000))
 			print ("Connecting to catalog service at host:" + catalog_host + " ,port: " + str(catalog_port))
 			self.catalog_channel = grpc.insecure_channel(f"{catalog_host}:{catalog_port}")
@@ -28,12 +28,13 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
 
 		# elect leader of order servies and notify to all services
 		try:
-			runing_order_id_addrs = list(os.getenv("ORDER_IDS").split("."))
+			runing_order_id_addrs = list(os.getenv("ORDER_IDS").split(","))
 			runing_order_id_addrs = [item.split(":") for item in runing_order_id_addrs]
-			self.runing_order_ids = {int(key):int(val) for [val, key] in runing_order_id_addrs}
+			self.runing_order_ids = {int(key):val for [key, val] in runing_order_id_addrs}
 			self.leaderId = self.leader_election(self.runing_order_ids)
 			self.catalogService = pb2_grpc.CatalogStub(self.catalog_channel)
 			self.catalogService.setLeader(pb2.leaderMessage(leaderId=self.leaderId))
+			self.orderService = pb2_grpc.OrderStub(self.order_channel)
 			print(self.runing_order_ids)
 			if self.leaderId < 0:
 				print("Erorr connecting to all order srvice instances")
@@ -158,19 +159,22 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
 		order_type = request["type"]
 		
 		# make trade call to order service
-		try:
-			orderService = pb2_grpc.OrderStub(self.order_channel)
-			response = orderService.healthCheck(pb2.checkMessage(ping="health check"))
-			print(response)
-			if response.error == "Error":
+		try:	
+			response = self.orderService.healthCheck(pb2.checkMessage(ping="health check"))
+			if not response.response:
 				# elect new leader
-				self.leader_election(self.runing_order_ids)
+				self.leaderId = self.leader_election(self.runing_order_ids)
+				self.catalogService.setLeader(pb2.leaderMessage(leaderId=self.leaderId))
+				self.orderService = pb2_grpc.OrderStub(self.order_channel)
+				response = self.orderService.healthCheck(pb2.checkMessage(ping="health check"))
 		except:
-			self.leader_election(self.runing_order_ids)
+			self.leaderId = self.leader_election(self.runing_order_ids)
 			self.catalogService.setLeader(pb2.leaderMessage(leaderId=self.leaderId))
+			self.orderService = pb2_grpc.OrderStub(self.order_channel)
+			response = self.orderService.healthCheck(pb2.checkMessage(ping="health check"))
 
 
-		result = orderService.trade(pb2.tradeRequestMessage(stockname=stockname, quantity=quantity, type=order_type))
+		result = self.orderService.trade(pb2.tradeRequestMessage(stockname=stockname, quantity=quantity, type=order_type))
 		print("Response received from the back-end Order service:")
 		print(result)
 
@@ -205,31 +209,30 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
 		if not len(running_id_addrs)>0:
 			print("All replicas down!!")
 			return -999
-
+		
 		try:
-			ports = running_id_addrs.values()
-			print("Ports: ", ports)
 			max_id = max(running_id_addrs)
-			order_host = os.getenv("ORDER_HOST", "0.0.0.0")
-			order_port = running_id_addrs.pop(max_id)
-			follower_ids, follower_ports = running_id_addrs.keys(), running_id_addrs.values()
-			print(follower_ids, follower_ports)
+			order_port, order_host = (running_id_addrs.pop(max_id)).split("-")
+			follower_ids, follower_host_ports = running_id_addrs.keys(), running_id_addrs.values()
+			follower_host_ports = [item.split("-") for item in follower_host_ports]
+			follower_hosts, follower_ports = [str(item[1]) for item in follower_host_ports], [int(item[0]) for item in follower_host_ports]
+			print(follower_ids, follower_hosts, follower_ports)
 			print ("Connecting to order service at host:" + order_host + " ,port: " + str(order_port) + " with id " + str(max_id))
 			self.order_channel = grpc.insecure_channel(f"{order_host}:{order_port}")
 			o_stb = pb2_grpc.OrderStub(self.order_channel)
 			result = o_stb.healthCheck(pb2.checkMessage(ping="health check"))
-			result = o_stb.setLeader(pb2.leaderOrderMessage(leaderId=max_id, followerIds=follower_ids, followerPorts=follower_ports))
-			print(result)
-			print("Ports: ", ports)
-
-			for port in ports:
-				print("Connecting to : ", order_host, port)
-				channel = grpc.insecure_channel(f"{order_host}:{port}")
-				o_stb = pb2_grpc.OrderStub(channel)
-				# result = o_stb.healthCheck(pb2.checkMessage(ping="health check"))
-				result = o_stb.setLeader(pb2.leaderOrderMessage(leaderId=max_id, followerIds=follower_ids, followerPorts=follower_ports))
-				channel.close()
-			return max_id
+			result = o_stb.setLeader(pb2.leaderOrderMessage(leaderId=max_id, followerIds=follower_ids, followerPorts=follower_ports, followerHosts=follower_hosts))
+			if result.result:
+				for port, host in zip(follower_ports, follower_hosts):
+					print("Connecting to : ", host, port)
+					channel = grpc.insecure_channel(f"{host}:{port}")
+					o_stb = pb2_grpc.OrderStub(channel)
+					# result = o_stb.healthCheck(pb2.checkMessage(ping="health check"))
+					result = o_stb.setLeader(pb2.leaderOrderMessage(leaderId=max_id, followerIds=follower_ids, followerPorts=follower_ports, followerHosts=follower_hosts))
+					channel.close()
+				return max_id
+			else:
+				self.leader_election(running_id_addrs)
 		except:
 			self.leader_election(running_id_addrs)
 
