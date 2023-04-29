@@ -7,6 +7,7 @@ from typing import ClassVar as _ClassVar, Iterable as _Iterable, Optional as _Op
 DESCRIPTOR: _descriptor.FileDescriptor
 INSUFFICIENT_QUANTITY: ERROR_CODES
 INTERNAL_ERROR: ERROR_CODES
+INVALID_ORDERNUMBER: ERROR_CODES
 INVALID_REQUEST: ERROR_CODES
 INVALID_STOCKNAME: ERROR_CODES
 NO_ERROR: ERROR_CODES
@@ -48,6 +49,26 @@ class leaderResponse(_message.Message):
     RESULT_FIELD_NUMBER: _ClassVar[int]
     result: bool
     def __init__(self, result: bool = ...) -> None: ...
+
+class lookupOrderRequestMessage(_message.Message):
+    __slots__ = ["order_number"]
+    ORDER_NUMBER_FIELD_NUMBER: _ClassVar[int]
+    order_number: int
+    def __init__(self, order_number: _Optional[int] = ...) -> None: ...
+
+class lookupOrderResponseMessage(_message.Message):
+    __slots__ = ["error", "name", "number", "quantity", "type"]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    NUMBER_FIELD_NUMBER: _ClassVar[int]
+    QUANTITY_FIELD_NUMBER: _ClassVar[int]
+    TYPE_FIELD_NUMBER: _ClassVar[int]
+    error: ERROR_CODES
+    name: str
+    number: int
+    quantity: int
+    type: str
+    def __init__(self, error: _Optional[_Union[ERROR_CODES, str]] = ..., number: _Optional[int] = ..., name: _Optional[str] = ..., type: _Optional[str] = ..., quantity: _Optional[int] = ...) -> None: ...
 
 class lookupRequestMessage(_message.Message):
     __slots__ = ["stockname"]

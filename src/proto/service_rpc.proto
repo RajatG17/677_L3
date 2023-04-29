@@ -22,6 +22,21 @@ service Order{
 
     //metod to set leader of order services
     rpc setLeader(leaderOrderMessage) returns (leaderResponse);
+
+    // lookup method for communication between front end server and order service 
+    rpc lookupOrder (lookupOrderRequestMessage) returns (lookupOrderResponseMessage);
+}
+
+message lookupOrderRequestMessage{
+    required int32 order_number = 1;
+} 
+
+message lookupOrderResponseMessage{
+    required ERROR_CODES error = 1;
+    optional int32 number = 2;
+    optional string name = 3;
+    optional string type = 4;
+    optional int32 quantity = 5;  
 }
 
 message lookupRequestMessage{
@@ -34,6 +49,7 @@ enum ERROR_CODES{
     INTERNAL_ERROR = 2;
     INSUFFICIENT_QUANTITY = 3;
     INVALID_REQUEST = 4;
+    INVALID_ORDERNUMBER = 5;
 }
 
 message leaderMessage{

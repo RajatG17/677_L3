@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from proto import service_rpc_pb2 as service__rpc__pb2
+import proto.service_rpc_pb2 as service__rpc__pb2
 
 
 class CatalogStub(object):
@@ -162,6 +162,11 @@ class OrderStub(object):
                 request_serializer=service__rpc__pb2.leaderOrderMessage.SerializeToString,
                 response_deserializer=service__rpc__pb2.leaderResponse.FromString,
                 )
+        self.lookupOrder = channel.unary_unary(
+                '/Order/lookupOrder',
+                request_serializer=service__rpc__pb2.lookupOrderRequestMessage.SerializeToString,
+                response_deserializer=service__rpc__pb2.lookupOrderResponseMessage.FromString,
+                )
 
 
 class OrderServicer(object):
@@ -189,6 +194,13 @@ class OrderServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def lookupOrder(self, request, context):
+        """lookup method for communication between front end server and order service 
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_OrderServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -206,6 +218,11 @@ def add_OrderServicer_to_server(servicer, server):
                     servicer.setLeader,
                     request_deserializer=service__rpc__pb2.leaderOrderMessage.FromString,
                     response_serializer=service__rpc__pb2.leaderResponse.SerializeToString,
+            ),
+            'lookupOrder': grpc.unary_unary_rpc_method_handler(
+                    servicer.lookupOrder,
+                    request_deserializer=service__rpc__pb2.lookupOrderRequestMessage.FromString,
+                    response_serializer=service__rpc__pb2.lookupOrderResponseMessage.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -266,5 +283,22 @@ class Order(object):
         return grpc.experimental.unary_unary(request, target, '/Order/setLeader',
             service__rpc__pb2.leaderOrderMessage.SerializeToString,
             service__rpc__pb2.leaderResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def lookupOrder(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/Order/lookupOrder',
+            service__rpc__pb2.lookupOrderRequestMessage.SerializeToString,
+            service__rpc__pb2.lookupOrderResponseMessage.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
