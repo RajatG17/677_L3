@@ -65,6 +65,7 @@ class OrderService(pb2_grpc.OrderServicer):
                 if status.error == pb2.NO_ERROR:
                     with self.lock.gen_wlock() as wlock:
                         self.transaction_number  += 1
+                        # send update other replicas of order service
                         for id, port, host in  zip(self.replica_Ids, self.replica_Ports, self.replica_Hosts):
                             if self.id == id:
                                 continue
@@ -80,7 +81,7 @@ class OrderService(pb2_grpc.OrderServicer):
                         with open(self.file_path+f"transaction_log_{str(self.id)}.txt", "a") as transaction_logs:
                             transaction_str = str(f"{self.transaction_number} - Stockname: {stockname}  Quantity: {quantity} Order: {order_type}\n")
                             transaction_logs.write(transaction_str)
-                        # send appropriate error code (for no error) and transaction number back to front end server
+                     # send appropriate error code (for no error) and transaction number back to front end server
                     return pb2.tradeResponseMessage(error=pb2.NO_ERROR, transaction_number=self.transaction_number)
                 # else forward the error to front end server to send appropriate response to client
                 else:
