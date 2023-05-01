@@ -36,9 +36,9 @@ def runLatencyTest(host, port, p):
                 break
             # Send Lookup request
             name = stock_names[random.randint(0, len(stock_names)-1)]
-            print ("Sending Lookup request for stockname: " + name)
+            # print ("Sending Lookup request for stockname: " + name)
             url = f"http://{host}:{port}/stocks/" + name
-            print("url: " + url)
+            # print("url: " + url)
 
             start_stocklookup = time.time()
             response = session.get(url)
@@ -47,8 +47,8 @@ def runLatencyTest(host, port, p):
             tot_stocklookup_req+=1
 
             # print(response.headers)
-            print("Response received:")
-            print(response.json())
+            # print("Response received:")
+            # print(response.json())
             data_json_obj = response.json()
             if data_json_obj.get("data", 0):
                 # If the lookup was succesful and client received JSON reply with top-level data object
@@ -62,7 +62,7 @@ def runLatencyTest(host, port, p):
                 # Send Trade request
                 name = stock_names[random.randint(0, len(stock_names)-2)]
                 type = trade_types[random.randint(0, 1)]
-                print ("Sending Trade request for stockname: " + name + " , type: " + type)
+                # print ("Sending Trade request for stockname: " + name + " , type: " + type)
                 body_json = {"name": name, "quantity": 1, "type": type}
                 json_str = json.dumps(body_json)
                 body = json_str.encode('utf-8')
@@ -75,8 +75,8 @@ def runLatencyTest(host, port, p):
                 tot_trade_time+=request_trade_time
                 tot_trade_req+=1
 
-                print("Response received:")
-                print(response.json())
+                # print("Response received:")
+                # print(response.json())
                 response = response.json()
                 if response.get("data", 0):
                     transaction_num = response['data']['transaction_number']
@@ -84,7 +84,7 @@ def runLatencyTest(host, port, p):
 
             time.sleep(5)
 
-    #print("len(client_orders): " + str(len(client_orders)))
+    # print("len(client_orders): " + str(len(client_orders)))
     for client_order in client_orders:
         transaction_number = client_order['transaction_number']
         name = client_order['name']
@@ -92,7 +92,7 @@ def runLatencyTest(host, port, p):
         type = client_order['type']
         # print(f"transaction_number: {transaction_number}, name: {name}, quantity: {quantity}, type: {type}")
         # Send Lookup Order request
-        print ("Sending Lookup Order request for ordernumber: " + str(transaction_number))
+        # print ("Sending Lookup Order request for ordernumber: " + str(transaction_number))
         url = f"http://{host}:{port}/orders/" + str(transaction_number)
     
         start_orderlookup = time.time()
@@ -101,8 +101,8 @@ def runLatencyTest(host, port, p):
         tot_orderlookup_time+=request_orderlookup_time
         tot_orderlookup_req+=1
 
-        print("Response received:")
-        print(response.json()) 
+        # print("Response received:")
+        # print(response.json()) 
         response = response.json()
         is_valid = False
         if (response.get("data", 0)):
@@ -110,8 +110,8 @@ def runLatencyTest(host, port, p):
                 is_valid = True
         if (not is_valid):
             print ("Incorrect Lookup Order response received for transaction_number: " + str(transaction_number))
-        else:
-            print ("Correct Lookup Order response received for transaction_number: " + str(transaction_number))   
+        #else:
+            #print ("Correct Lookup Order response received for transaction_number: " + str(transaction_number))   
 
     if (tot_stocklookup_req != 0):
         avg_stocklookup_time = tot_stocklookup_time/tot_stocklookup_req
