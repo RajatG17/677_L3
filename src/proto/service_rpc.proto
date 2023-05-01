@@ -6,8 +6,6 @@ service Catalog{
 
     // buy method (order service to catalog service)
     rpc buy_or_sell_stock (orderRequestMessage) returns (orderResponseMessage);
-
-    rpc setLeader(leaderMessage) returns (leaderResponse);
     
 }
 
@@ -23,20 +21,17 @@ service Order{
     //metod to set leader of order services
     rpc setLeader(leaderOrderMessage) returns (leaderResponse);
 
-    // lookup method for communication between front end server and order service 
-    rpc lookupOrder (lookupOrderRequestMessage) returns (lookupOrderResponseMessage);
-}
+    // order lookup method
+    rpc lookupOrder(lookupOrderRequestMessage) returns (lookupOrderResponseMessage);
 
-message lookupOrderRequestMessage{
-    required int32 order_number = 1;
-} 
+    //mehthod to update followers
+    rpc update_db(syncRequestMessage) returns (syncResponseMessage);
 
-message lookupOrderResponseMessage{
-    required ERROR_CODES error = 1;
-    optional int32 number = 2;
-    optional string name = 3;
-    optional string type = 4;
-    optional int32 quantity = 5;  
+    // method to update database after recovering from crash
+    rpc synchronize_database(recoveryRequestMessage) returns (recoveryResponseMessage);
+
+    //method to send database records to service after it recovers
+    rpc send_db_data(dataRequestMessage) returns (dataResponseMessage);
 }
 
 message lookupRequestMessage{
@@ -49,18 +44,36 @@ enum ERROR_CODES{
     INTERNAL_ERROR = 2;
     INSUFFICIENT_QUANTITY = 3;
     INVALID_REQUEST = 4;
-    INVALID_ORDERNUMBER = 5;
+    DB_UPDATE_ERROR = 5;
+    INVALID_ORDERNUMBER = 6;
 }
 
-message leaderMessage{
-    required int32 leaderId = 1;
+message lookupOrderRequestMessage{
+    required int32 order_number = 1; 
+}
+
+message dataRequestMessage{
+    required int32 transaction_number = 1;
+}
+
+message dataResponseMessage{
+    required ERROR_CODES error = 1;
+    repeated string transaction_str = 2;
+}
+
+message lookupOrderResponseMessage{
+    required ERROR_CODES error = 1;
+    optional float number = 2;
+    optional string name = 3;
+    optional string type = 4;
+    optional int32 quantity = 5;
 }
 
 message leaderOrderMessage{
     required int32 leaderId = 1;
-    repeated int32 followerIds = 2;
-    repeated int32 followerPorts = 3;
-    repeated string followerHosts = 4;
+    repeated int32 replica_Ids = 2;
+    repeated int32 replica_Ports = 3;
+    repeated string replica_Hosts = 4;
 }
 
 message leaderResponse{
@@ -93,10 +106,32 @@ message tradeRequestMessage{
     optional int32 transaction_number = 4;
 }
 
+message syncRequestMessage{
+    required string stockname = 1;
+    required int32 quantity = 2;
+    required string type = 3;
+    required int32 transaction_number = 4;
+}
+
 message tradeResponseMessage{
     required ERROR_CODES error = 1;
     optional int32 transaction_number = 2;
 
+}
+
+message syncResponseMessage{
+    required ERROR_CODES error = 1;
+}
+
+message recoveryRequestMessage{
+    required int32 leaderId = 1;
+    repeated int32 replica_Ids = 2;
+    repeated int32 replica_Ports = 3;
+    repeated string replica_Hosts = 4;
+}
+
+message recoveryResponseMessage{
+    required ERROR_CODES error = 1;
 }
 
 message checkMessage{

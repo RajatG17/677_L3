@@ -1,6 +1,6 @@
 import sys
 sys.path.append("..")
-import requests
+
 import grpc
 import os
 import pandas as pd
@@ -24,15 +24,6 @@ class CatalogService(pb2_grpc.CatalogServicer):
             self.data_file = pd.read_csv("../data/stock_data.csv")
         except:
             print("Failed to load files")
-            
-    def setLeader(self, request, context):
-        try:
-            leaderId = request.leaderId
-            self.leaderId = leaderId
-            return pb2.leaderResponse(result=True)
-        except:
-            return pb2.leaderResponse(result=False)
-
 
     def lookup(self, request, context):
         try:
@@ -63,85 +54,52 @@ class CatalogService(pb2_grpc.CatalogServicer):
             # print("Inside catalog service's buy or sell method")
 
             # acquire write lock
-            if self.leaderId == serviceId:
-                write_lock = self.lock.gen_wlock()
-                if order_type.lower() == "buy":
-                    try:
-                        # reduce quantity of stock volume (in server's data)   
-                        with write_lock: 
-                            if self.data_file[stockname][1] >= quantity:
-                                # decrement quantity available to trade
-                                self.data_file[stockname][1] -= quantity
-                                # update volume of traded stock
-                                self.data_file[stockname][2] += quantity
-                            else:
-                                # return insufficient quantity error
-                                return pb2.orderResponseMessage(error=pb2.INSUFFICIENT_QUANTITY)
-                            # presist data
-                            try:
-                                self.data_file.to_csv('../data/stock_data.csv', sep=",", index=False)
-                            except:
-                                print("Error writing data to file")
-                        # Send cache invalidation request to front-end service
-                        print("Send cache invalidation request to front-end service")
-                        with requests.Session() as session:
-                            # Send GET request for invalidation
-                            name = stockname
-                            url = "http://127.0.0.1:8000/stocksCache/" + name
-                            response = session.get(url)
-                            data_json_obj = response.json()
-                            #print(data_json_obj)
-                            if data_json_obj.get("data", 0):
-                                # Cache invalidation was succesful and client received JSON reply with top-level data object
-                                print ("Cache Invalidation done")
-                            else:
-                                # Cache invalidation failed
-                                print ("Cache Invalidation failed")
- 
-                        return pb2.orderResponseMessage(error=pb2.NO_ERROR)
-                    except:
-                        # print(f"Error occured processing request for buying {quantity} {stockname} stocks")
-                        return pb2.orderResponseMessage(error=pb2.INTERNAL_ERROR)
-                elif order_type.lower() == "sell":
-                    try:
-                        # reduce quantity of stock volume (in server's data)   
-                        with write_lock:
-                            # increment quantity available to trade
-                            self.data_file[stockname][1] += quantity
-                            # update total volume of traded stock
+            write_lock = self.lock.gen_wlock()
+            # proceed to trade stock
+            if order_type.lower() == "buy":
+                try:
+                    # reduce quantity of stock volume (in server's data)   
+                    with write_lock: 
+                        if self.data_file[stockname][1] >= quantity:
+                            # decrement quantity available to trade
+                            self.data_file[stockname][1] -= quantity
+                            # update volume of traded stock
                             self.data_file[stockname][2] += quantity
-                            # persist data
-                            try:
-                                self.data_file.to_csv('../data/stock_data.csv', sep=",", index=False)    
-                            except:
-                                print("Error persisting data")
-
-                        # Send cache invalidation request to front-end service
-                        print("Send cache invalidation request to front-end service")
-                        with requests.Session() as session:
-                            # Send GET request for invalidation
-                            name = stockname
-                            url = "http://127.0.0.1:8000/stocksCache/" + name
-                            response = session.get(url)
-                            data_json_obj = response.json()
-                            #print(data_json_obj)
-                            if data_json_obj.get("data", 0):
-                                # Cache invalidation was succesful and client received JSON reply with top-level data object
-                                print ("Cache Invalidation done")
-                            else:
-                                # Cache invalidation failed
-                                print ("Cache Invalidation failed")
-                        return pb2.orderResponseMessage(error=pb2.NO_ERROR)
-                    except:
-                        # print(f"Error occured processing request for selling {quantity} {stockname} stocks")
-                        return pb2.orderResponseMessage(error=pb2.INTERNAL_ERROR)
-                        
-                return pb2.orderResponseMessage(error=pb2.INTERNAL_ERROR)
-            else:
-                return pb2.orderResponseMessage(error=pb2.INTERNAL_ERROR)    
+                        else:
+                            # return insufficient quantity error
+                            return pb2.orderResponseMessage(error=pb2.INSUFFICIENT_QUANTITY)
+                        # presist data
+                        try:
+                            self.data_file.to_csv('../data/stock_data.csv', sep=",", index=False)
+                        except:
+                            print("Error writing data to file")
+                    # print(f"Buy request successful for {quantity} stocks of {stockname} for $ {(quantity*self.data_file[stockname][0])}.") 
+                    return pb2.orderResponseMessage(error=pb2.NO_ERROR)
+                except:
+                    # print(f"Error occured processing request for buying {quantity} {stockname} stocks")
+                    return pb2.orderResponseMessage(error=pb2.INTERNAL_ERROR)
+            elif order_type.lower() == "sell":
+                try:
+                    # reduce quantity of stock volume (in server's data)   
+                    with write_lock:
+                        # increment quantity available to trade
+                        self.data_file[stockname][1] += quantity
+                        # update total volume of traded stock
+                        self.data_file[stockname][2] += quantity
+                        # persist data
+                        try:
+                            self.data_file.to_csv('../data/stock_data.csv', sep=",", index=False)    
+                        except:
+                            print("Error persisting data")
+                    # print(f"Sell request successful for {quantity} stocks of {stockname} for $ {(quantity*self.data_file[stockname][0])}.") 
+                    return pb2.orderResponseMessage(error=pb2.NO_ERROR)
+                except:
+                    # print(f"Error occured processing request for selling {quantity} {stockname} stocks")
+                    return pb2.orderResponseMessage(error=pb2.INTERNAL_ERROR)
+            return pb2.orderResponseMessage(error=pb2.INTERNAL_ERROR)
+                
                 
 def serve(hostname="0.0.0.0", port=6000, max_workers=MAX_WORKER_THRESHOLD):
-    print(MAX_WORKER_THRESHOLD)
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=max_workers))
     pb2_grpc.add_CatalogServicer_to_server(CatalogService(), server)
     server.add_insecure_port(f'{hostname}:{port}')

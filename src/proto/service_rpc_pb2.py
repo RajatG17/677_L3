@@ -13,43 +13,55 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11service_rpc.proto\"1\n\x19lookupOrderRequestMessage\x12\x14\n\x0corder_number\x18\x01 \x02(\x05\"w\n\x1alookupOrderResponseMessage\x12\x1b\n\x05\x65rror\x18\x01 \x02(\x0e\x32\x0c.ERROR_CODES\x12\x0e\n\x06number\x18\x02 \x01(\x05\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x0c\n\x04type\x18\x04 \x01(\t\x12\x10\n\x08quantity\x18\x05 \x01(\x05\")\n\x14lookupRequestMessage\x12\x11\n\tstockname\x18\x01 \x02(\t\"!\n\rleaderMessage\x12\x10\n\x08leaderId\x18\x01 \x02(\x05\"i\n\x12leaderOrderMessage\x12\x10\n\x08leaderId\x18\x01 \x02(\x05\x12\x13\n\x0b\x66ollowerIds\x18\x02 \x03(\x05\x12\x15\n\rfollowerPorts\x18\x03 \x03(\x05\x12\x15\n\rfollowerHosts\x18\x04 \x03(\t\" \n\x0eleaderResponse\x12\x0e\n\x06result\x18\x01 \x02(\x08\"h\n\x15lookupResponseMessage\x12\x1b\n\x05\x65rror\x18\x01 \x02(\x0e\x32\x0c.ERROR_CODES\x12\x11\n\tstockname\x18\x02 \x01(\t\x12\r\n\x05price\x18\x03 \x01(\x02\x12\x10\n\x08quantity\x18\x04 \x01(\x05\"[\n\x13orderRequestMessage\x12\x11\n\tstockname\x18\x01 \x02(\t\x12\x10\n\x08quantity\x18\x02 \x02(\x05\x12\x0c\n\x04type\x18\x03 \x02(\t\x12\x11\n\tserviceId\x18\x04 \x02(\x05\"3\n\x14orderResponseMessage\x12\x1b\n\x05\x65rror\x18\x01 \x02(\x0e\x32\x0c.ERROR_CODES\"d\n\x13tradeRequestMessage\x12\x11\n\tstockname\x18\x01 \x02(\t\x12\x10\n\x08quantity\x18\x02 \x02(\x05\x12\x0c\n\x04type\x18\x03 \x02(\t\x12\x1a\n\x12transaction_number\x18\x04 \x01(\x05\"O\n\x14tradeResponseMessage\x12\x1b\n\x05\x65rror\x18\x01 \x02(\x0e\x32\x0c.ERROR_CODES\x12\x1a\n\x12transaction_number\x18\x02 \x01(\x05\"\x1c\n\x0c\x63heckMessage\x12\x0c\n\x04ping\x18\x01 \x02(\t\"7\n\rcheckResponse\x12\x17\n\x08response\x18\x01 \x01(\x08:\x05\x66\x61lse\x12\r\n\x05\x65rror\x18\x02 \x01(\t*\x8f\x01\n\x0b\x45RROR_CODES\x12\x0c\n\x08NO_ERROR\x10\x00\x12\x15\n\x11INVALID_STOCKNAME\x10\x01\x12\x12\n\x0eINTERNAL_ERROR\x10\x02\x12\x19\n\x15INSUFFICIENT_QUANTITY\x10\x03\x12\x13\n\x0fINVALID_REQUEST\x10\x04\x12\x17\n\x13INVALID_ORDERNUMBER\x10\x05\x32\xb2\x01\n\x07\x43\x61talog\x12\x37\n\x06lookup\x12\x15.lookupRequestMessage\x1a\x16.lookupResponseMessage\x12@\n\x11\x62uy_or_sell_stock\x12\x14.orderRequestMessage\x1a\x15.orderResponseMessage\x12,\n\tsetLeader\x12\x0e.leaderMessage\x1a\x0f.leaderResponse2\xe6\x01\n\x05Order\x12\x34\n\x05trade\x12\x14.tradeRequestMessage\x1a\x15.tradeResponseMessage\x12,\n\x0bhealthCheck\x12\r.checkMessage\x1a\x0e.checkResponse\x12\x31\n\tsetLeader\x12\x13.leaderOrderMessage\x1a\x0f.leaderResponse\x12\x46\n\x0blookupOrder\x12\x1a.lookupOrderRequestMessage\x1a\x1b.lookupOrderResponseMessage')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11service_rpc.proto\")\n\x14lookupRequestMessage\x12\x11\n\tstockname\x18\x01 \x02(\t\"1\n\x19lookupOrderRequestMessage\x12\x14\n\x0corder_number\x18\x01 \x02(\x05\"0\n\x12\x64\x61taRequestMessage\x12\x1a\n\x12transaction_number\x18\x01 \x02(\x05\"K\n\x13\x64\x61taResponseMessage\x12\x1b\n\x05\x65rror\x18\x01 \x02(\x0e\x32\x0c.ERROR_CODES\x12\x17\n\x0ftransaction_str\x18\x02 \x03(\t\"w\n\x1alookupOrderResponseMessage\x12\x1b\n\x05\x65rror\x18\x01 \x02(\x0e\x32\x0c.ERROR_CODES\x12\x0e\n\x06number\x18\x02 \x01(\x02\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x0c\n\x04type\x18\x04 \x01(\t\x12\x10\n\x08quantity\x18\x05 \x01(\x05\"!\n\rleaderMessage\x12\x10\n\x08leaderId\x18\x01 \x02(\x05\"i\n\x12leaderOrderMessage\x12\x10\n\x08leaderId\x18\x01 \x02(\x05\x12\x13\n\x0breplica_Ids\x18\x02 \x03(\x05\x12\x15\n\rreplica_Ports\x18\x03 \x03(\x05\x12\x15\n\rreplica_Hosts\x18\x04 \x03(\t\" \n\x0eleaderResponse\x12\x0e\n\x06result\x18\x01 \x02(\x08\"h\n\x15lookupResponseMessage\x12\x1b\n\x05\x65rror\x18\x01 \x02(\x0e\x32\x0c.ERROR_CODES\x12\x11\n\tstockname\x18\x02 \x01(\t\x12\r\n\x05price\x18\x03 \x01(\x02\x12\x10\n\x08quantity\x18\x04 \x01(\x05\"[\n\x13orderRequestMessage\x12\x11\n\tstockname\x18\x01 \x02(\t\x12\x10\n\x08quantity\x18\x02 \x02(\x05\x12\x0c\n\x04type\x18\x03 \x02(\t\x12\x11\n\tserviceId\x18\x04 \x02(\x05\"3\n\x14orderResponseMessage\x12\x1b\n\x05\x65rror\x18\x01 \x02(\x0e\x32\x0c.ERROR_CODES\"d\n\x13tradeRequestMessage\x12\x11\n\tstockname\x18\x01 \x02(\t\x12\x10\n\x08quantity\x18\x02 \x02(\x05\x12\x0c\n\x04type\x18\x03 \x02(\t\x12\x1a\n\x12transaction_number\x18\x04 \x01(\x05\"c\n\x12syncRequestMessage\x12\x11\n\tstockname\x18\x01 \x02(\t\x12\x10\n\x08quantity\x18\x02 \x02(\x05\x12\x0c\n\x04type\x18\x03 \x02(\t\x12\x1a\n\x12transaction_number\x18\x04 \x02(\x05\"O\n\x14tradeResponseMessage\x12\x1b\n\x05\x65rror\x18\x01 \x02(\x0e\x32\x0c.ERROR_CODES\x12\x1a\n\x12transaction_number\x18\x02 \x01(\x05\"2\n\x13syncResponseMessage\x12\x1b\n\x05\x65rror\x18\x01 \x02(\x0e\x32\x0c.ERROR_CODES\"m\n\x16recoveryRequestMessage\x12\x10\n\x08leaderId\x18\x01 \x02(\x05\x12\x13\n\x0breplica_Ids\x18\x02 \x03(\x05\x12\x15\n\rreplica_Ports\x18\x03 \x03(\x05\x12\x15\n\rreplica_Hosts\x18\x04 \x03(\t\"6\n\x17recoveryResponseMessage\x12\x1b\n\x05\x65rror\x18\x01 \x02(\x0e\x32\x0c.ERROR_CODES\"\x1c\n\x0c\x63heckMessage\x12\x0c\n\x04ping\x18\x01 \x02(\t\"7\n\rcheckResponse\x12\x17\n\x08response\x18\x01 \x01(\x08:\x05\x66\x61lse\x12\r\n\x05\x65rror\x18\x02 \x01(\t*\xa4\x01\n\x0b\x45RROR_CODES\x12\x0c\n\x08NO_ERROR\x10\x00\x12\x15\n\x11INVALID_STOCKNAME\x10\x01\x12\x12\n\x0eINTERNAL_ERROR\x10\x02\x12\x19\n\x15INSUFFICIENT_QUANTITY\x10\x03\x12\x13\n\x0fINVALID_REQUEST\x10\x04\x12\x13\n\x0f\x44\x42_UPDATE_ERROR\x10\x05\x12\x17\n\x13INVALID_ORDERNUMBER\x10\x06\x32\xb2\x01\n\x07\x43\x61talog\x12\x37\n\x06lookup\x12\x15.lookupRequestMessage\x1a\x16.lookupResponseMessage\x12@\n\x11\x62uy_or_sell_stock\x12\x14.orderRequestMessage\x1a\x15.orderResponseMessage\x12,\n\tsetLeader\x12\x0e.leaderMessage\x1a\x0f.leaderResponse2\xa4\x03\n\x05Order\x12\x34\n\x05trade\x12\x14.tradeRequestMessage\x1a\x15.tradeResponseMessage\x12,\n\x0bhealthCheck\x12\r.checkMessage\x1a\x0e.checkResponse\x12\x31\n\tsetLeader\x12\x13.leaderOrderMessage\x1a\x0f.leaderResponse\x12\x46\n\x0blookupOrder\x12\x1a.lookupOrderRequestMessage\x1a\x1b.lookupOrderResponseMessage\x12\x36\n\tupdate_db\x12\x13.syncRequestMessage\x1a\x14.syncResponseMessage\x12I\n\x14synchronize_database\x12\x17.recoveryRequestMessage\x1a\x18.recoveryResponseMessage\x12\x39\n\x0csend_db_data\x12\x13.dataRequestMessage\x1a\x14.dataResponseMessage')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'service_rpc_pb2', globals())
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  _ERROR_CODES._serialized_start=935
-  _ERROR_CODES._serialized_end=1078
-  _LOOKUPORDERREQUESTMESSAGE._serialized_start=21
-  _LOOKUPORDERREQUESTMESSAGE._serialized_end=70
-  _LOOKUPORDERRESPONSEMESSAGE._serialized_start=72
-  _LOOKUPORDERRESPONSEMESSAGE._serialized_end=191
-  _LOOKUPREQUESTMESSAGE._serialized_start=193
-  _LOOKUPREQUESTMESSAGE._serialized_end=234
-  _LEADERMESSAGE._serialized_start=236
-  _LEADERMESSAGE._serialized_end=269
-  _LEADERORDERMESSAGE._serialized_start=271
-  _LEADERORDERMESSAGE._serialized_end=376
-  _LEADERRESPONSE._serialized_start=378
-  _LEADERRESPONSE._serialized_end=410
-  _LOOKUPRESPONSEMESSAGE._serialized_start=412
-  _LOOKUPRESPONSEMESSAGE._serialized_end=516
-  _ORDERREQUESTMESSAGE._serialized_start=518
-  _ORDERREQUESTMESSAGE._serialized_end=609
-  _ORDERRESPONSEMESSAGE._serialized_start=611
-  _ORDERRESPONSEMESSAGE._serialized_end=662
-  _TRADEREQUESTMESSAGE._serialized_start=664
-  _TRADEREQUESTMESSAGE._serialized_end=764
-  _TRADERESPONSEMESSAGE._serialized_start=766
-  _TRADERESPONSEMESSAGE._serialized_end=845
-  _CHECKMESSAGE._serialized_start=847
-  _CHECKMESSAGE._serialized_end=875
-  _CHECKRESPONSE._serialized_start=877
-  _CHECKRESPONSE._serialized_end=932
-  _CATALOG._serialized_start=1081
-  _CATALOG._serialized_end=1259
-  _ORDER._serialized_start=1262
-  _ORDER._serialized_end=1492
+  _ERROR_CODES._serialized_start=1382
+  _ERROR_CODES._serialized_end=1546
+  _LOOKUPREQUESTMESSAGE._serialized_start=21
+  _LOOKUPREQUESTMESSAGE._serialized_end=62
+  _LOOKUPORDERREQUESTMESSAGE._serialized_start=64
+  _LOOKUPORDERREQUESTMESSAGE._serialized_end=113
+  _DATAREQUESTMESSAGE._serialized_start=115
+  _DATAREQUESTMESSAGE._serialized_end=163
+  _DATARESPONSEMESSAGE._serialized_start=165
+  _DATARESPONSEMESSAGE._serialized_end=240
+  _LOOKUPORDERRESPONSEMESSAGE._serialized_start=242
+  _LOOKUPORDERRESPONSEMESSAGE._serialized_end=361
+  _LEADERMESSAGE._serialized_start=363
+  _LEADERMESSAGE._serialized_end=396
+  _LEADERORDERMESSAGE._serialized_start=398
+  _LEADERORDERMESSAGE._serialized_end=503
+  _LEADERRESPONSE._serialized_start=505
+  _LEADERRESPONSE._serialized_end=537
+  _LOOKUPRESPONSEMESSAGE._serialized_start=539
+  _LOOKUPRESPONSEMESSAGE._serialized_end=643
+  _ORDERREQUESTMESSAGE._serialized_start=645
+  _ORDERREQUESTMESSAGE._serialized_end=736
+  _ORDERRESPONSEMESSAGE._serialized_start=738
+  _ORDERRESPONSEMESSAGE._serialized_end=789
+  _TRADEREQUESTMESSAGE._serialized_start=791
+  _TRADEREQUESTMESSAGE._serialized_end=891
+  _SYNCREQUESTMESSAGE._serialized_start=893
+  _SYNCREQUESTMESSAGE._serialized_end=992
+  _TRADERESPONSEMESSAGE._serialized_start=994
+  _TRADERESPONSEMESSAGE._serialized_end=1073
+  _SYNCRESPONSEMESSAGE._serialized_start=1075
+  _SYNCRESPONSEMESSAGE._serialized_end=1125
+  _RECOVERYREQUESTMESSAGE._serialized_start=1127
+  _RECOVERYREQUESTMESSAGE._serialized_end=1236
+  _RECOVERYRESPONSEMESSAGE._serialized_start=1238
+  _RECOVERYRESPONSEMESSAGE._serialized_end=1292
+  _CHECKMESSAGE._serialized_start=1294
+  _CHECKMESSAGE._serialized_end=1322
+  _CHECKRESPONSE._serialized_start=1324
+  _CHECKRESPONSE._serialized_end=1379
+  _CATALOG._serialized_start=1549
+  _CATALOG._serialized_end=1727
+  _ORDER._serialized_start=1730
+  _ORDER._serialized_end=2150
 # @@protoc_insertion_point(module_scope)

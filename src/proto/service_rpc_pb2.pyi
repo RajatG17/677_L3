@@ -4,6 +4,7 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from typing import ClassVar as _ClassVar, Iterable as _Iterable, Optional as _Optional, Union as _Union
 
+DB_UPDATE_ERROR: ERROR_CODES
 DESCRIPTOR: _descriptor.FileDescriptor
 INSUFFICIENT_QUANTITY: ERROR_CODES
 INTERNAL_ERROR: ERROR_CODES
@@ -26,6 +27,20 @@ class checkResponse(_message.Message):
     response: bool
     def __init__(self, response: bool = ..., error: _Optional[str] = ...) -> None: ...
 
+class dataRequestMessage(_message.Message):
+    __slots__ = ["transaction_number"]
+    TRANSACTION_NUMBER_FIELD_NUMBER: _ClassVar[int]
+    transaction_number: int
+    def __init__(self, transaction_number: _Optional[int] = ...) -> None: ...
+
+class dataResponseMessage(_message.Message):
+    __slots__ = ["error", "transaction_str"]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    TRANSACTION_STR_FIELD_NUMBER: _ClassVar[int]
+    error: ERROR_CODES
+    transaction_str: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, error: _Optional[_Union[ERROR_CODES, str]] = ..., transaction_str: _Optional[_Iterable[str]] = ...) -> None: ...
+
 class leaderMessage(_message.Message):
     __slots__ = ["leaderId"]
     LEADERID_FIELD_NUMBER: _ClassVar[int]
@@ -33,16 +48,16 @@ class leaderMessage(_message.Message):
     def __init__(self, leaderId: _Optional[int] = ...) -> None: ...
 
 class leaderOrderMessage(_message.Message):
-    __slots__ = ["followerHosts", "followerIds", "followerPorts", "leaderId"]
-    FOLLOWERHOSTS_FIELD_NUMBER: _ClassVar[int]
-    FOLLOWERIDS_FIELD_NUMBER: _ClassVar[int]
-    FOLLOWERPORTS_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ["leaderId", "replica_Hosts", "replica_Ids", "replica_Ports"]
     LEADERID_FIELD_NUMBER: _ClassVar[int]
-    followerHosts: _containers.RepeatedScalarFieldContainer[str]
-    followerIds: _containers.RepeatedScalarFieldContainer[int]
-    followerPorts: _containers.RepeatedScalarFieldContainer[int]
+    REPLICA_HOSTS_FIELD_NUMBER: _ClassVar[int]
+    REPLICA_IDS_FIELD_NUMBER: _ClassVar[int]
+    REPLICA_PORTS_FIELD_NUMBER: _ClassVar[int]
     leaderId: int
-    def __init__(self, leaderId: _Optional[int] = ..., followerIds: _Optional[_Iterable[int]] = ..., followerPorts: _Optional[_Iterable[int]] = ..., followerHosts: _Optional[_Iterable[str]] = ...) -> None: ...
+    replica_Hosts: _containers.RepeatedScalarFieldContainer[str]
+    replica_Ids: _containers.RepeatedScalarFieldContainer[int]
+    replica_Ports: _containers.RepeatedScalarFieldContainer[int]
+    def __init__(self, leaderId: _Optional[int] = ..., replica_Ids: _Optional[_Iterable[int]] = ..., replica_Ports: _Optional[_Iterable[int]] = ..., replica_Hosts: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class leaderResponse(_message.Message):
     __slots__ = ["result"]
@@ -65,10 +80,10 @@ class lookupOrderResponseMessage(_message.Message):
     TYPE_FIELD_NUMBER: _ClassVar[int]
     error: ERROR_CODES
     name: str
-    number: int
+    number: float
     quantity: int
     type: str
-    def __init__(self, error: _Optional[_Union[ERROR_CODES, str]] = ..., number: _Optional[int] = ..., name: _Optional[str] = ..., type: _Optional[str] = ..., quantity: _Optional[int] = ...) -> None: ...
+    def __init__(self, error: _Optional[_Union[ERROR_CODES, str]] = ..., number: _Optional[float] = ..., name: _Optional[str] = ..., type: _Optional[str] = ..., quantity: _Optional[int] = ...) -> None: ...
 
 class lookupRequestMessage(_message.Message):
     __slots__ = ["stockname"]
@@ -101,6 +116,42 @@ class orderRequestMessage(_message.Message):
     def __init__(self, stockname: _Optional[str] = ..., quantity: _Optional[int] = ..., type: _Optional[str] = ..., serviceId: _Optional[int] = ...) -> None: ...
 
 class orderResponseMessage(_message.Message):
+    __slots__ = ["error"]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    error: ERROR_CODES
+    def __init__(self, error: _Optional[_Union[ERROR_CODES, str]] = ...) -> None: ...
+
+class recoveryRequestMessage(_message.Message):
+    __slots__ = ["leaderId", "replica_Hosts", "replica_Ids", "replica_Ports"]
+    LEADERID_FIELD_NUMBER: _ClassVar[int]
+    REPLICA_HOSTS_FIELD_NUMBER: _ClassVar[int]
+    REPLICA_IDS_FIELD_NUMBER: _ClassVar[int]
+    REPLICA_PORTS_FIELD_NUMBER: _ClassVar[int]
+    leaderId: int
+    replica_Hosts: _containers.RepeatedScalarFieldContainer[str]
+    replica_Ids: _containers.RepeatedScalarFieldContainer[int]
+    replica_Ports: _containers.RepeatedScalarFieldContainer[int]
+    def __init__(self, leaderId: _Optional[int] = ..., replica_Ids: _Optional[_Iterable[int]] = ..., replica_Ports: _Optional[_Iterable[int]] = ..., replica_Hosts: _Optional[_Iterable[str]] = ...) -> None: ...
+
+class recoveryResponseMessage(_message.Message):
+    __slots__ = ["error"]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    error: ERROR_CODES
+    def __init__(self, error: _Optional[_Union[ERROR_CODES, str]] = ...) -> None: ...
+
+class syncRequestMessage(_message.Message):
+    __slots__ = ["quantity", "stockname", "transaction_number", "type"]
+    QUANTITY_FIELD_NUMBER: _ClassVar[int]
+    STOCKNAME_FIELD_NUMBER: _ClassVar[int]
+    TRANSACTION_NUMBER_FIELD_NUMBER: _ClassVar[int]
+    TYPE_FIELD_NUMBER: _ClassVar[int]
+    quantity: int
+    stockname: str
+    transaction_number: int
+    type: str
+    def __init__(self, stockname: _Optional[str] = ..., quantity: _Optional[int] = ..., type: _Optional[str] = ..., transaction_number: _Optional[int] = ...) -> None: ...
+
+class syncResponseMessage(_message.Message):
     __slots__ = ["error"]
     ERROR_FIELD_NUMBER: _ClassVar[int]
     error: ERROR_CODES

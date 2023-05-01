@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import proto.service_rpc_pb2 as service__rpc__pb2
+from proto import service_rpc_pb2 as service__rpc__pb2
 
 
 class CatalogStub(object):
@@ -167,6 +167,21 @@ class OrderStub(object):
                 request_serializer=service__rpc__pb2.lookupOrderRequestMessage.SerializeToString,
                 response_deserializer=service__rpc__pb2.lookupOrderResponseMessage.FromString,
                 )
+        self.update_db = channel.unary_unary(
+                '/Order/update_db',
+                request_serializer=service__rpc__pb2.syncRequestMessage.SerializeToString,
+                response_deserializer=service__rpc__pb2.syncResponseMessage.FromString,
+                )
+        self.synchronize_database = channel.unary_unary(
+                '/Order/synchronize_database',
+                request_serializer=service__rpc__pb2.recoveryRequestMessage.SerializeToString,
+                response_deserializer=service__rpc__pb2.recoveryResponseMessage.FromString,
+                )
+        self.send_db_data = channel.unary_unary(
+                '/Order/send_db_data',
+                request_serializer=service__rpc__pb2.dataRequestMessage.SerializeToString,
+                response_deserializer=service__rpc__pb2.dataResponseMessage.FromString,
+                )
 
 
 class OrderServicer(object):
@@ -195,7 +210,28 @@ class OrderServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def lookupOrder(self, request, context):
-        """lookup method for communication between front end server and order service 
+        """order lookup method
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def update_db(self, request, context):
+        """mehthod to update followers
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def synchronize_database(self, request, context):
+        """method to update database after recovering from crash
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def send_db_data(self, request, context):
+        """method to send database records to service after it recovers
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -223,6 +259,21 @@ def add_OrderServicer_to_server(servicer, server):
                     servicer.lookupOrder,
                     request_deserializer=service__rpc__pb2.lookupOrderRequestMessage.FromString,
                     response_serializer=service__rpc__pb2.lookupOrderResponseMessage.SerializeToString,
+            ),
+            'update_db': grpc.unary_unary_rpc_method_handler(
+                    servicer.update_db,
+                    request_deserializer=service__rpc__pb2.syncRequestMessage.FromString,
+                    response_serializer=service__rpc__pb2.syncResponseMessage.SerializeToString,
+            ),
+            'synchronize_database': grpc.unary_unary_rpc_method_handler(
+                    servicer.synchronize_database,
+                    request_deserializer=service__rpc__pb2.recoveryRequestMessage.FromString,
+                    response_serializer=service__rpc__pb2.recoveryResponseMessage.SerializeToString,
+            ),
+            'send_db_data': grpc.unary_unary_rpc_method_handler(
+                    servicer.send_db_data,
+                    request_deserializer=service__rpc__pb2.dataRequestMessage.FromString,
+                    response_serializer=service__rpc__pb2.dataResponseMessage.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -300,5 +351,56 @@ class Order(object):
         return grpc.experimental.unary_unary(request, target, '/Order/lookupOrder',
             service__rpc__pb2.lookupOrderRequestMessage.SerializeToString,
             service__rpc__pb2.lookupOrderResponseMessage.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def update_db(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/Order/update_db',
+            service__rpc__pb2.syncRequestMessage.SerializeToString,
+            service__rpc__pb2.syncResponseMessage.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def synchronize_database(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/Order/synchronize_database',
+            service__rpc__pb2.recoveryRequestMessage.SerializeToString,
+            service__rpc__pb2.recoveryResponseMessage.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def send_db_data(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/Order/send_db_data',
+            service__rpc__pb2.dataRequestMessage.SerializeToString,
+            service__rpc__pb2.dataResponseMessage.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
