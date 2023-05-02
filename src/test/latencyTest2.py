@@ -36,24 +36,24 @@ def runLatencyTest(host, port, p):
             break
         # Send Lookup request
         name = stock_names[random.randint(0, len(stock_names)-1)]
-        print ("Sending Lookup request for stockname: " + name)
+        # print ("Sending Lookup request for stockname: " + name)
         url = "/stocks/" + name
         start = time.time()
         conn.request("GET", url)						
         response = conn.getresponse()
         request_stocklookup_time = time.time() - start
         data = response.read()
-        print(response.status, response.reason, response.version)
+        # print(response.status, response.reason, response.version)
         data_json_obj = decode_response(data)
-        print ("data: ")
-        print(data_json_obj)
+        # print ("data: ")
+        # print(data_json_obj)
         tot_stocklookup_time+=request_stocklookup_time
         tot_stocklookup_req+=1
 
         if data_json_obj.get("data", 0):
             # If the lookup was succesful and client received JSON reply with top-level data object
             stock_quantity = int(data_json_obj['data']['quantity'])
-            print ("Stock Quantity: " + str(stock_quantity))
+            # print ("Stock Quantity: " + str(stock_quantity))
         else:
             # If the lookup failed, set the "stock_quantity" as 0, so that trade request is not sent for this failed lookup
             stock_quantity = 0
@@ -61,7 +61,7 @@ def runLatencyTest(host, port, p):
         if (stock_quantity > 0 and prob <= p):
             # Send Trade request
             type = trade_types[random.randint(0, 1)]
-            print ("Sending Trade request for stockname: " + name + " , type: " + type)
+            # print ("Sending Trade request for stockname: " + name + " , type: " + type)
             url = "/orders"
             body_json = {"name": name, "quantity": 1, "type": type}
             json_str = json.dumps(body_json)
@@ -75,11 +75,11 @@ def runLatencyTest(host, port, p):
             tot_trade_req+=1
 
             data = response.read()
-            print("response.status, response.reason, response.version : ")
-            print(response.status, response.reason, response.version)
+            # print("response.status, response.reason, response.version : ")
+            # print(response.status, response.reason, response.version)
             data_json_obj = decode_response(data)
-            print("data: ")
-            print(data_json_obj)
+            # print("data: ")
+            # print(data_json_obj)
 
             if data_json_obj.get("data", 0):
                 transaction_num = data_json_obj['data']['transaction_number']
@@ -93,9 +93,9 @@ def runLatencyTest(host, port, p):
         name = client_order['name']
         quantity = client_order['quantity']
         type = client_order['type']
-        print(f"Client side transaction_number: {transaction_number}, name: {name}, quantity: {quantity}, type: {type}")
+        # print(f"Client side transaction_number: {transaction_number}, name: {name}, quantity: {quantity}, type: {type}")
         # Send Lookup Order request
-        print ("Sending Lookup Order request for ordernumber: " + str(transaction_number))
+        # print ("Sending Lookup Order request for ordernumber: " + str(transaction_number))
         
         url = "/orders/" + str(transaction_number)
     
@@ -106,10 +106,10 @@ def runLatencyTest(host, port, p):
         tot_orderlookup_time+=request_orderlookup_time
         tot_orderlookup_req+=1
         data = response.read()
-        print(response.status, response.reason, response.version)
+        # print(response.status, response.reason, response.version)
         data_json_obj = decode_response(data)
-        print ("data: ")
-        print(data_json_obj)   
+        # print ("data: ")
+        # print(data_json_obj)   
  
         is_valid = False
         if (data_json_obj.get("data", 0)):
@@ -155,8 +155,8 @@ if __name__ == "__main__":
     elif (len(argv) == 3):
         host = argv[1]
         port = int(argv[2])
-        #p_values = [0, 0.2, 0.4, 0.6, 0.8, 1]
-        p_values = [1, 0.8, 0.6, 0.4, 0.2, 0]
+        p_values = [0, 0.2, 0.4, 0.6, 0.8, 1]
+        #p_values = [1, 0.8, 0.6, 0.4, 0.2, 0]
         for i in range(0, len(p_values)):
             p = p_values[i]
             runLatencyTest(host, port, p)
@@ -168,8 +168,8 @@ if __name__ == "__main__":
     else:
         host = "127.0.0.1"
         port = 8000
-        #p_values = [0, 0.2, 0.4, 0.6, 0.8, 1]
-        p_values = [1, 0.8, 0.6, 0.4, 0.2, 0]
+        p_values = [0, 0.2, 0.4, 0.6, 0.8, 1]
+        #p_values = [1, 0.8, 0.6, 0.4, 0.2, 0]
         for i in range(0, len(p_values)):
             p = p_values[i]
             runLatencyTest(host, port, p) 

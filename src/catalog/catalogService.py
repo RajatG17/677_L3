@@ -91,12 +91,12 @@ class CatalogService(pb2_grpc.CatalogServicer):
                         # print(data)
                         data_json_obj = json.loads(data.decode('utf-8'))    
                         # print(data_json_obj)
-                        if data_json_obj.get("data", 0):
+                        #if data_json_obj.get("data", 0):
                             # Cache invalidation was successful and client received JSON reply with top-level data object
-                            print ("Cache Invalidation done")
-                        else:
+                            #print ("Cache Invalidation done")
+                        #else:
                             # Cache invalidation failed
-                            print ("Cache Invalidation failed")
+                            #print ("Cache Invalidation failed")
                         conn.close()
                     except:
                         return pb2.orderResponseMessage(error=pb2.INTERNAL_ERROR)
@@ -132,12 +132,12 @@ class CatalogService(pb2_grpc.CatalogServicer):
                         # print(data)
                         data_json_obj = json.loads(data.decode('utf-8'))
                         # print(data_json_obj)
-                        if data_json_obj.get("data", 0):
+                        #if data_json_obj.get("data", 0):
                             # Cache invalidation was successful and client received JSON reply with top-level data object
-                            print ("Cache Invalidation done")
-                        else:
+                            #print ("Cache Invalidation done")
+                        #else:
                             # Cache invalidation failed
-                            print ("Cache Invalidation failed")
+                            #print ("Cache Invalidation failed")
                         conn.close()
                     except:
                         return pb2.orderResponseMessage(error=pb2.INTERNAL_ERROR)

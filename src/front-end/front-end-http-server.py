@@ -31,6 +31,8 @@ class MyLRUCache:
 		
 	def put(self, key, value):
 		with self.lock:
+			if self.capacity == 0:
+				return	
 			if key in self.cache:
 				self.keys.remove(key)
 			elif len(self.keys) == self.capacity:
@@ -42,6 +44,7 @@ class MyLRUCache:
 	def invalidate(self, key):
 		with self.lock:
 			if key in self.cache:
+				print("Invalidating stockname: " + key + " from cache")
 				self.keys.remove(key)
 				del self.cache[key]
 
@@ -211,13 +214,13 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
 			# Method for GET request: GET /stocksCache/<stock_name>
 			# Obtain the stockname from the parsed URL/path
 			stockname = str(parsed_path[2])
-			print("Invalidating stockname: " + stockname + " from cache")
+			#print("Invalidating stockname: " + stockname + " from cache")
 			try:
 				# Invalidate cache entry for stockname
 				stocksLRUCache.invalidate(stockname)
 				json_str = json.dumps({"data": {"code": 200, "message": "Cache Invalidation done"}})
 				response = self.convert_json_string(json_str)
-				print("Cache invalidation done")  
+				#print("Cache invalidation done")  
 				return self.create_and_send_response(200, "application/json", str(len(response)), response)
 			except:
 				# If cache invalidation failed, return JSON reply with a top-level error object
