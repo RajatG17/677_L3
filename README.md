@@ -20,6 +20,8 @@ The lab has the following learning outcomes with regard to concepts covered in c
 3. Number of late days used for this lab: 1
 4. Number of late days used so far including this lab: 3
 
+Front end, Part1, Part4 done by Shreya, Part 2 and Part 3 done by Rajat.
+
 ## Instructions
 
 1. You may work in groups of two for this lab. If you decide to work in groups, you should briefly
