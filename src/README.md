@@ -17,7 +17,7 @@ CATALOG_HOST="0.0.0.0" CATALOG_PORT=6000 python3 catalogService.py
 2. Run the order service in the src/order/ folder:
 
 ```shell
-CATALOG_HOST=<catalog_host> CATALOG_PORT=<catalog_port> python3 orderService.py <order_service_id> <order_service_file_path> <order_port> <order_host>
+CATALOG_HOST=<catalog_host> CATALOG_PORT=<catalog_port> ORDER_ID=<order_ids> ORDER_PORT=<order_ports> ORDER_HOST=<order_hosts> python3 orderService.py <order_service_id> <order_service_file_path> <order_port> <order_host>
 ```
 
 Example:
@@ -25,27 +25,35 @@ Example:
 Run first replica on port 6001:
 
 ```shell
-CATALOG_HOST="0.0.0.0" CATALOG_PORT=6000 python3 orderService.py 5 ../data/ 6001 0.0.0.0
+CATALOG_HOST="0.0.0.0" CATALOG_PORT=6000 ORDER_ID="5,6,7" ORDER_PORTS="6001,6002,6003" ORDER_HOSTS="0.0.0.0,0.0.0.0,0.0.0.0" python3 orderService.py 5 ../data/ 6001 0.0.0.0
 ```
 
 Run second replica on port 6002:
 
 ```shell
-CATALOG_HOST="0.0.0.0" CATALOG_PORT=6000 python3 orderService.py 6 ../data/ 6002 0.0.0.0
+CATALOG_HOST="0.0.0.0" CATALOG_PORT=6000 ORDER_ID="5,6,7" ORDER_PORTS="6001,6002,6003" ORDER_HOSTS="0.0.0.0,0.0.0.0,0.0.0.0" python3 orderService.py 6 ../data/ 6002 0.0.0.0
 ```
 
 Run third replica on port 6003:
 
 ```shell
-CATALOG_HOST="0.0.0.0" CATALOG_PORT=6000 python3 orderService.py 8 ../data/ 6003 0.0.0.0
+CATALOG_HOST="0.0.0.0" CATALOG_PORT=6000 ORDER_ID="5,6,7" ORDER_PORTS="6001,6002,6003" ORDER_HOSTS="0.0.0.0,0.0.0.0,0.0.0.0" python3 orderService.py 8 ../data/ 6003 0.0.0.0
 ```
 
 3. Run the front-end service in the src/front-end/frontendweb/ folder:
 
-Set the environment variable "ORDER_IDS" for the host, port and file path of all the order replicas.
+Set the environment variables "ORDER_ID", "ORDER_PORT", and "ORDER_HOST" for the host, port and file path of all the order replicas.
 
 ```shell
-export ORDER_IDS="<order_service_id1>:<order_port1>-<order_host1>,<order_service_id2>:<order_port2>-<order_host2>,<order_service_id3>:<order_port3>-<order_host3>"
+export ORDER_ID="<order_service_id1>,<order_service_id2>,<order_service_id3>"
+```
+
+```shell
+export ORDER_PORTS="<order_port_1>,<order_port_2>,<order_port_3>"
+```
+
+```shell
+export ORDER_HOSTS="<order_host_1>,<order_host_2>,<order_host_3>"
 ```
 
 ```shell
@@ -55,7 +63,15 @@ CATALOG_HOST=<catalog_host> CATALOG_PORT=<catalog_port> python3 manage.py runser
 Example:
 
 ```shell
-export ORDER_IDS="5:6001-0.0.0.0,6:6002-0.0.0.0,8:6003-0.0.0.0"
+export ORDER_ID="5,6,7"
+```
+
+```shell
+export ORDER_PORT="6001,6002,6003"
+```
+
+```shell
+export ORDER_HOST="0.0.0.0,0.0.0.0,0.0.0.0"
 ```
 
 ```shell
