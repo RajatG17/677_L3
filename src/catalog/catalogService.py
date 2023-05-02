@@ -79,7 +79,7 @@ class CatalogService(pb2_grpc.CatalogServicer):
                     # print(f"Buy request successful for {quantity} stocks of {stockname} for $ {(quantity*self.data_file[stockname][0])}.") 
                     
                     try:
-                        # Send cache invalidation request to front-end service
+                        # Send cache invalidation request to front-end service after successful Buy request
                         print("Send cache invalidation request to front-end service")
                         conn = http.client.HTTPConnection("0.0.0.0", 8000)
                         # Send GET request for invalidation
@@ -120,7 +120,7 @@ class CatalogService(pb2_grpc.CatalogServicer):
                     # print(f"Sell request successful for {quantity} stocks of {stockname} for $ {(quantity*self.data_file[stockname][0])}.") 
 
                     try:
-                        # Send cache invalidation request to front-end service
+                        # Send cache invalidation request to front-end service after successful Sell request
                         print("Send cache invalidation request to front-end service")
                         conn = http.client.HTTPConnection("0.0.0.0", 8000)
                         # Send GET request for invalidation

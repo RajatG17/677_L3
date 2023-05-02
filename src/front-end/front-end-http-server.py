@@ -20,7 +20,8 @@ class MyLRUCache:
 		self.cache = {}
 		self.keys = []
 		self.lock = threading.Lock()
-		
+
+	# Method of cache lookup	
 	def get(self, key):
 		with self.lock:
 			if key not in self.cache:
@@ -28,7 +29,8 @@ class MyLRUCache:
 			self.keys.remove(key)
 			self.keys.append(key)
 			return self.cache[key]
-		
+
+	# Method for cache update		
 	def put(self, key, value):
 		with self.lock:
 			if self.capacity == 0:
@@ -40,7 +42,8 @@ class MyLRUCache:
 				del self.cache[evicted]
 			self.cache[key] = value
 			self.keys.append(key)
-	
+
+	# Methods for cache invalidate
 	def invalidate(self, key):
 		with self.lock:
 			if key in self.cache:
@@ -52,7 +55,6 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
 	protocol_version = 'HTTP/1.1'
 
 	def __init__(self, request, client_address, server):
-		# Application LRU Cache
 
 		# create channel for communicating with catalog service
 		try:

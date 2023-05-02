@@ -17,14 +17,17 @@ def runLatencyTest(host, port, p):
     client_orders = []
     max_requests = 200
 
-    stock_names = ["GameStart", "FishCo", "MenhirCo", "BoarCo", "InvalidStockName"]
+    stock_names = ["GameStart", "FishCo", "MenhirCo", "BoarCo", "Wheely", "CarCo", "TheaterCo", "DishCo", "ConStock", "InvalidStockName"]
     trade_types = ["buy", "sell"]
-    total_requests = 0
 
+    total_requests = 0
+ 
+    #Store total time for different types of requests
     tot_stocklookup_time = 0
     tot_orderlookup_time = 0
     tot_trade_time = 0
 
+    #Store total number of requests for different types of requests
     tot_stocklookup_req = 0
     tot_orderlookup_req = 0
     tot_trade_req = 0
@@ -88,6 +91,7 @@ def runLatencyTest(host, port, p):
             #time.sleep(5)
 
     # print("len(client_orders): " + str(len(client_orders)))
+    # Check that the response of order number lookup is same as that stored on client
     for client_order in client_orders:
         transaction_number = client_order['transaction_number']
         name = client_order['name']
@@ -112,6 +116,7 @@ def runLatencyTest(host, port, p):
         print(data_json_obj)   
  
         is_valid = False
+        # Check if data returned in the JSON object matches with the order information sent by the client       
         if (data_json_obj.get("data", 0)):
             if (transaction_number == data_json_obj['data']['number'] and name == data_json_obj['data']['name'] and quantity == data_json_obj['data']['quantity'] and type == data_json_obj['data']['type']):
                 is_valid = True
