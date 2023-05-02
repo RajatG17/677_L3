@@ -50,8 +50,6 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
 
 	def __init__(self, request, client_address, server):
 		# Application LRU Cache
-		cache_size = int(os.getenv("CACHE_SIZE", 5))
-		self.stocksLRUCache = MyLRUCache(cache_size)
 
 		# create channel for communicating with catalog service
 		try:
@@ -99,7 +97,7 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
 		self.end_headers()
 		self.wfile.write(response)
 
-	# Method for GET request: GET /stocks/<stock_name> , GET/orders/<order_number> and GET /stocksCache/<stock_name>
+	# Method for GET request: GET /stocks/<stock_name> , GET/orders/<order_number>, GET /stocksCache/<stock_name> and GET /stocksCacheLookup/<stock_name>
 	def do_GET(self):
 		"""
 		# create channel for communicating with catalog service
@@ -114,6 +112,26 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
 		get_path = str(self.path)
 		parsed_path = get_path.split("/")
 
+		# Check if the URL for the GET method  is of the form: "/stocksCacheLookup/<stock_name>"
+		if (len(parsed_path) == 3 and parsed_path[0] == "" and parsed_path[1] == "stocksCacheLookup"):
+                    # Return JSON reply with a top-level data object if stockname is in cache, otherwise return JSON reply with a top-level error object 
+                    # Obtain the stockname from the parsed URL/path "/stocks/<stock_name>"
+                    stockname = str(parsed_path[2])
+
+                    result = stocksLRUCache.get(stockname)
+                    if result:
+                        # Return JSON reply with a top-level data object
+                        print("Stockname: " + stockname + " in cache")
+                        response = self.convert_json_string(result)
+                        return self.create_and_send_response(200, "application/json", str(len(response)), response) 
+                    else:
+                        # If the GET request was not successful as stockname is not in cache, return JSON reply with a top-level error object
+                        print("Stockname: " + stockname + " not in cache")
+                        json_str = json.dumps({"error": {"code": 404, "message": "stock not found"}})
+                        response = self.convert_json_string(json_str)
+                        self.create_and_send_response(404, "application/json", str(len(response)), response)
+          
+
 		# Check if the URL for the GET method is invalid - It should be of the format : "/stocks/<stock_name>" , "/orders/<order_number>" or /stocksCache/<stock_name>
 		if (len(parsed_path) != 3 or parsed_path[0] != "" or (parsed_path[1] != "stocks" and parsed_path[1] != "orders" and parsed_path[1] != "stocksCache")):
 			print ("URL for HTTP GET request is invalid - It should be of the format : ") 
@@ -124,11 +142,12 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
 			self.create_and_send_response(400, "application/json", str(len(response)), response)
 			return
 
-		if (parsed_path[1] == "stocks"):		
+		if (parsed_path[1] == "stocks"):
+			print("Inside stocks lookup")		
 			# Obtain the stockname from the parsed URL/path "/stocks/<stock_name>" 
 			stockname = parsed_path[2]
 
-			result = self.stocksLRUCache.get(stockname)
+			result = stocksLRUCache.get(stockname)
 			if result:
 				print("Stockname: " + stockname + " in cache")
 				response = self.convert_json_string(result)
@@ -146,7 +165,7 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
 				price = result.price
 				quantity = result.quantity
 				json_str = json.dumps({"data": {"name": stockname, "price": price, "quantity": quantity}})
-				self.stocksLRUCache.put(stockname, json_str)
+				stocksLRUCache.put(stockname, json_str)
 				response = self.convert_json_string(json_str)
 				self.create_and_send_response(200, "application/json", str(len(response)), response)
 			elif result.error == pb2.INVALID_STOCKNAME:
@@ -195,9 +214,10 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
 			print("Invalidating stockname: " + stockname + " from cache")
 			try:
 				# Invalidate cache entry for stockname
-				self.stocksLRUCache.invalidate(stockname)
+				stocksLRUCache.invalidate(stockname)
 				json_str = json.dumps({"data": {"code": 200, "message": "Cache Invalidation done"}})
 				response = self.convert_json_string(json_str)
+				print("Cache invalidation done")  
 				return self.create_and_send_response(200, "application/json", str(len(response)), response)
 			except:
 				# If cache invalidation failed, return JSON reply with a top-level error object
@@ -350,6 +370,8 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
 		
 if __name__ == "__main__":
 
+	CACHE_SIZE = int(os.getenv("CACHE_SIZE", 5))
+	stocksLRUCache = MyLRUCache(CACHE_SIZE)
 	frontend_host = os.getenv("FRONTEND_HOST", "0.0.0.0")
 	frontend_port = int(os.getenv("FRONTEND_PORT", 8000))
 	print("Running Front-End Service on host: " + frontend_host + " , port:" + str(frontend_port))
