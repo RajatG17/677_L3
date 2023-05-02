@@ -216,17 +216,11 @@ def serve(id, file_path, port, host="0.0.0.0", max_workers=MAX_WORKER_THRESHOLD)
     
 if __name__=="__main__":
 
-    if len(sys.argv) > 3:
-        file_path = str(sys.argv[2])
-        id = int(sys.argv[1])
-        order_port = sys.argv[3]
-        order_host = str(sys.argv[4])
-    else:
-        order_host = str(sys.argv[3])
-        order_port = sys.argv[2]
-        file_path = str(sys.argv[1])
-        id = 1
     MAX_WORKER_THRESHOLD = int(os.getenv("MAX_WORKER_THRESHOLD_ORDER", 5))
+    order_host = os.getenv("ORDER_HOST", "0.0.0.0")
+    order_port = int(os.getenv("ORDER_PORT", 6001))
+    id = int((os.getenv("SERVICE_ID", 1)))
+    file_path = os.getenv("FILE_PATH", "../data/")
     print ("Running order service on host: " + order_host + " , port: " + str(order_port) + " with id "+ str(id))
 
     # get last transaction number from log file if it exists

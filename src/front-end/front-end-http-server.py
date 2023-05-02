@@ -13,10 +13,46 @@ from sys import argv
 import threading
 import os
 
+# LRU Cache Class to store stockname lookups
+class MyLRUCache:
+	def __init__(self, capacity):
+		self.capacity = capacity
+		self.cache = {}
+		self.keys = []
+		self.lock = threading.Lock()
+		
+	def get(self, key):
+		with self.lock:
+			if key not in self.cache:
+				return None
+			self.keys.remove(key)
+			self.keys.append(key)
+			return self.cache[key]
+		
+	def put(self, key, value):
+		with self.lock:
+			if key in self.cache:
+				self.keys.remove(key)
+			elif len(self.keys) == self.capacity:
+				evicted = self.keys.pop(0)
+				del self.cache[evicted]
+			self.cache[key] = value
+			self.keys.append(key)
+	
+	def invalidate(self, key):
+		with self.lock:
+			if key in self.cache:
+				self.keys.remove(key)
+				del self.cache[key]
+
 class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
 	protocol_version = 'HTTP/1.1'
 
 	def __init__(self, request, client_address, server):
+		# Application LRU Cache
+		cache_size = int(os.getenv("CACHE_SIZE", 5))
+		self.stocksLRUCache = MyLRUCache(cache_size)
+
 		# create channel for communicating with catalog service
 		try:
 			catalog_host = os.getenv("CATALOG_HOST", "0.0.0.0")
@@ -28,17 +64,17 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
 
 		# elect leader of order servies and notify to all services
 		try:
-			runing_order_id_addrs = list(os.getenv("ORDER_IDS").split(","))
-			runing_order_id_addrs = [item.split(":") for item in runing_order_id_addrs]
-			self.runing_order_ids = {int(key):val for [key, val] in runing_order_id_addrs}
+			running_order_id_addrs = list(os.getenv("ORDER_IDS").split(","))
+			running_order_id_addrs = [item.split(":") for item in running_order_id_addrs]
+			self.running_order_ids = {int(key):val for [key, val] in running_order_id_addrs}
 			self.down_services = []
-			self.leaderId = self.leader_election(self.runing_order_ids)
+			self.leaderId = self.leader_election(self.running_order_ids)
 			self.catalogService = pb2_grpc.CatalogStub(self.catalog_channel)
 			self.orderService = pb2_grpc.OrderStub(self.order_channel)
 			self.order_recover_sync()
-			print(self.runing_order_ids)
+			print(self.running_order_ids)
 			if self.leaderId < 0:
-				print("Erorr connecting to all order service instances")
+				print("Error connecting to all order service instances")
 		except:
 			print("Error establishing a channel with order service")
 
@@ -64,6 +100,7 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
 		self.end_headers()
 		self.wfile.write(response)
 
+	# Method for GET request: GET /stocks/<stock_name> , GET/orders/<order_number> and GET /stocksCache/<stock_name>
 	def do_GET(self):
 		"""
 		# create channel for communicating with catalog service
@@ -78,54 +115,98 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
 		get_path = str(self.path)
 		parsed_path = get_path.split("/")
 
-		# Check if the URL for the GET method is invalid - It should be of the format : "/stocks/<stock_name>"
-		if (len(parsed_path) != 3 or parsed_path[0] != "" or parsed_path[1] != "stocks"):
+		# Check if the URL for the GET method is invalid - It should be of the format : "/stocks/<stock_name>" , "/orders/<order_number>" or /stocksCache/<stock_name>
+		if (len(parsed_path) != 3 or parsed_path[0] != "" or (parsed_path[1] != "stocks" and parsed_path[1] != "orders" and parsed_path[1] != "stocksCache")):
 			print ("URL for HTTP GET request is invalid - It should be of the format : ") 
-			print("\"/stocks/<stock_name>\"")
+			print("\"/stocks/<stock_name>\" OR \"/orders/<order_number>\"")
 			# If the GET request was not successful, return JSON reply with a top-level error object
 			json_str = json.dumps({"error": {"code": 400, "message": "Invalid GET request/URL"}})
 			response = self.convert_json_string(json_str)
 			self.create_and_send_response(400, "application/json", str(len(response)), response)
 			return
-		
-		# Obtain the stockname from the parsed URL/path
-		stockname = parsed_path[2]
 
-		# make lookup call to catalog service
+		if (parsed_path[1] == "stocks"):		
+			# Obtain the stockname from the parsed URL/path "/stocks/<stock_name>" 
+			stockname = parsed_path[2]
+
+			result = self.stocksLRUCache.get(stockname)
+			if result:
+				print("Stockname: " + stockname + " in cache")
+				response = self.convert_json_string(result)
+				return self.create_and_send_response(200, "application/json", str(len(response)), response)
+	
+			# make lookup call to catalog service
+			print("Stockname : " + stockname + " not in cache, making lookup call to Catalog service")    
+			result = self.catalogService.lookup(pb2.lookupRequestMessage(stockname=stockname))
+			print("Response received from the back-end Catalog service:")
+			print(result)
 		
-		result = self.catalogService.lookup(pb2.lookupRequestMessage(stockname=stockname))
-		print("Response received from the back-end Catalog service:")
-		print(result)
-		
-		if result.error == pb2.NO_ERROR:
-			#Return JSON reply with a top-level data object 
-			stockname = result.stockname
-			price = result.price
-			quantity = result.quantity
-			json_str = json.dumps({"data": {"name": stockname, "price": price, "quantity": quantity}})
-			response = self.convert_json_string(json_str)
-			self.create_and_send_response(200, "application/json", str(len(response)), response)
-		elif result.error == pb2.INVALID_STOCKNAME:
-			#If the GET request was not successful due to invalid stockname, return JSON reply with a top-level error object
-			json_str = json.dumps({"error": {"code": 404, "message": "stock not found"}})
-			response = self.convert_json_string(json_str)
-			self.create_and_send_response(404, "application/json", str(len(response)), response)
-		else:			
-			#If the GET request was not successful due to any other error, return JSON reply with a top-level error object
-			json_str = json.dumps({"error": {"code": 500, "message": "Lookup Failed due to internal error"}})
-			response = self.convert_json_string(json_str)
-			self.create_and_send_response(500, "application/json", str(len(response)), response) 
+			if result.error == pb2.NO_ERROR:
+				# Return JSON reply with a top-level data object 
+				stockname = result.stockname
+				price = result.price
+				quantity = result.quantity
+				json_str = json.dumps({"data": {"name": stockname, "price": price, "quantity": quantity}})
+				self.stocksLRUCache.put(stockname, json_str)
+				response = self.convert_json_string(json_str)
+				self.create_and_send_response(200, "application/json", str(len(response)), response)
+			elif result.error == pb2.INVALID_STOCKNAME:
+				# If the GET request was not successful due to invalid stockname, return JSON reply with a top-level error object
+				json_str = json.dumps({"error": {"code": 404, "message": "stock not found"}})
+				response = self.convert_json_string(json_str)
+				self.create_and_send_response(404, "application/json", str(len(response)), response)
+			else:			
+				# If the GET request was not successful due to any other error, return JSON reply with a top-level error object
+				json_str = json.dumps({"error": {"code": 500, "message": "Lookup Failed due to internal error"}})
+				response = self.convert_json_string(json_str)
+				self.create_and_send_response(500, "application/json", str(len(response)), response) 
+		elif (parsed_path[1] == "orders"):
+			# Obtain the order number from the parsed URL/path "/orders/<order_number>"
+			order_number = int(parsed_path[2])
+
+			# make lookup call to order service
+			print("Making lookup call to Order service for order number: " + str(order_number))
+			result = self.orderService.lookupOrder(pb2.lookupOrderRequestMessage(order_number=order_number))
+			print("Response received from the back-end Order service:")
+			print(result)		
+
+			if result.error == pb2.NO_ERROR:
+				# Return JSON reply with a top-level data object
+				number = result.number
+				name = result.name
+				type = result.type
+				quantity = result.quantity
+				json_str = json.dumps({"data": {"number": number, "name": name, "type": type, "quantity": quantity}})
+				response = self.convert_json_string(json_str)
+				return self.create_and_send_response(200, "application/json", str(len(response)), response)
+			elif result.error == pb2.INVALID_ORDERNUMBER:
+				# If the GET request was not successful due to invalid ordernumber, return JSON reply with a top-level error object
+				json_str = json.dumps({"error": {"code": 404, "message": "order number not found"}})
+				response = self.convert_json_string(json_str)
+				return self.create_and_send_response(404, "application/json", str(len(response)), response)
+			else:
+				# If the GET request was not successful due to any other error, return JSON reply with a top-level error object
+				json_str = json.dumps({"error": {"code": 500, "message": "Lookup Failed due to internal error"}})
+				response = self.convert_json_string(json_str)
+				return self.create_and_send_response(500, "application/json", str(len(response)), response) 
+		elif (parsed_path[1] == "stocksCache"):
+			# Method for GET request: GET /stocksCache/<stock_name>
+			# Obtain the stockname from the parsed URL/path
+			stockname = str(parsed_path[2])
+			print("Invalidating stockname: " + stockname + " from cache")
+			try:
+				# Invalidate cache entry for stockname
+				self.stocksLRUCache.invalidate(stockname)
+				json_str = json.dumps({"data": {"code": 200, "message": "Cache Invalidation done"}})
+				response = self.convert_json_string(json_str)
+				return self.create_and_send_response(200, "application/json", str(len(response)), response)
+			except:
+				# If cache invalidation failed, return JSON reply with a top-level error object
+				json_str = json.dumps({"error": {"code": 500, "message": "Cache Invalidation Failed due to internal error"}})
+				response = self.convert_json_string(json_str)
+				return self.create_and_send_response(500, "application/json", str(len(response)), response)
 
 	def do_POST(self):
-		"""
-		# create channel for communicating with order service
-		try:
-			order_host = os.getenv("ORDER_HOST", "order")
-			order_port = int(os.getenv("ORDER_PORT", 6001))
-			self.order_channel = grpc.insecure_channel(f"{order_host}:{order_port}")
-		except:
-			print("Error establishing a channel with order service")
-		"""
 
 		# Read the JSON object attached by the client to the POST request
 		length = int(self.headers["Content-Length"])
@@ -140,11 +221,6 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
 			response = self.convert_json_string(json_str)
 			self.create_and_send_response(400, "application/json", str(len(response)), response)
 			return
-		"""
-		# Read the JSON object attached by the client to the POST request
-		length = int(self.headers["Content-Length"])
-		request = json.loads(self.rfile.read(length).decode('utf-8'))
-		"""
 
 		if (self.headers["Content-type"] != "application/json" or "name" not in request or "quantity" not in request or "type" not in request):
 			print ("Invalid POST request - JSON object should contain the keys \"name\", \"quantity\" and \"type\"")
@@ -164,17 +240,18 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
 			result = self.orderService.trade(pb2.tradeRequestMessage(stockname=stockname, quantity=quantity, type=order_type))
 			# if not result.error:
 			# 	# elect new leader
-			# 	self.leaderId = self.leader_election(self.runing_order_ids)
+			# 	self.leaderId = self.leader_election(self.running_order_ids)
 			# 	self.orderService = pb2_grpc.OrderStub(self.order_channel)
 			# 	response = self.orderService.healthCheck(pb2.checkMessage(ping="health check"))
 		except:
 			# if not able to communicate with current leader, elect a new leader, and continue trade
 			self.down_services.append([self.leaderId, self.order_host, self.order_port])
-			self.leaderId = self.leader_election(self.runing_order_ids)
+			self.leaderId = self.leader_election(self.running_order_ids)
 			self.orderService = pb2_grpc.OrderStub(self.order_channel)
 			result = self.orderService.trade(pb2.tradeRequestMessage(stockname=stockname, quantity=quantity, type=order_type))
 
 		self.order_recover_sync()
+		print("Making trade call to Order service for stockname: " + stockname)
 		# result = self.orderService.trade(pb2.tradeRequestMessage(stockname=stockname, quantity=quantity, type=order_type))
 		print("Response received from the back-end Order service:")
 		print(result)
@@ -214,7 +291,7 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
 		
 		try:
 			max_id = max(running_id_addrs)
-			self.order_port, self.order_host = (self.runing_order_ids.pop(max_id)).split("-")
+			self.order_port, self.order_host = (self.running_order_ids.pop(max_id)).split("-")
 			self.order_ids, order_host_ports = list(running_id_addrs.keys()), running_id_addrs.values()
 			order_host_ports = [item.split("-") for item in order_host_ports]
 			self.order_hosts, self.order_ports = [str(item[1]) for item in order_host_ports], [int(item[0]) for item in order_host_ports]
@@ -273,20 +350,18 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
 							self.down_services.remove(service)
 							# update recovered service's databsase
 							stub.synchronize_database(pb2.recoveryRequestMessage(leaderId = self.leaderId, replica_Ids=self.order_ids, replica_Ports=self.order_ports, replica_Hosts=self.order_hosts))
-							self.runing_order_ids[service[0]]= f"{service[2]}-{service[1]}"
+							self.running_order_ids[service[0]]= f"{service[2]}-{service[1]}"
 				except:
 					# if unable to establish connection with a sevice, skip that service
 					continue
 
 	def order_recover_sync(self):
 		self.try_sync_recovered_services()
-
-
-
+		
 if __name__ == "__main__":
 
 	frontend_host = os.getenv("FRONTEND_HOST", "0.0.0.0")
-	frontend_port = int(os.getenv("FRONTEND_PORT", 4000))
+	frontend_port = int(os.getenv("FRONTEND_PORT", 8000))
 	print("Running Front-End Service on host: " + frontend_host + " , port:" + str(frontend_port))
 	http_server = ThreadingHTTPServer((frontend_host, frontend_port), MyHTTPHandlerClass)
 	http_server.serve_forever()
