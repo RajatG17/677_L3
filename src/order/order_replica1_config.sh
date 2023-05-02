@@ -5,5 +5,5 @@ export SERVICE_ID=5
 export FILE_PATH="../data/"
 export ORDER_PORT=6001 
 export ORDER_HOSTS="0.0.0.0,0.0.0.0,0.0.0.0"
-export ORDER_ID="5,6,7"
+export ORDER_ID="5,6,8"
 export ORDER_PORTS="6001,6002,6003"
