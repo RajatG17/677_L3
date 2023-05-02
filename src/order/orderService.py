@@ -124,7 +124,8 @@ class OrderService(pb2_grpc.OrderServicer):
                         if (transaction_number == order_number):
                             stockname = contents[3]
                             order_type = contents[8]
-                            order_type = order_type[:-1]
+                            #order_type = order_type[:-1]
+                            #print("order_type" + order_type)
                             order_quantity = int(contents[6])
                             # send appropriate error code (for no error) and transaction details back to front end server
                             return pb2.lookupOrderResponseMessage(error=pb2.NO_ERROR, number=transaction_number, name=stockname, type=order_type, quantity=order_quantity)

@@ -6,6 +6,9 @@ from proto import service_rpc_pb2 as pb2
 from proto import service_rpc_pb2_grpc as pb2_grpc
 import grpc
 
+host = "0.0.0.0"
+port = "6001"
+
 def test_valid_ordernumber(host, port):
     # create a channel
     channel = grpc.insecure_channel(f"{host}:{port}")
