@@ -18,6 +18,7 @@ class OrderService(pb2_grpc.OrderServicer):
         self.transaction_number = transaction_number
         self.file_path = file_path
         self.id = id
+        self.synchronize_database()
         # create lock instance
         self.lock = rwlock.RWLockRead()
         try:
@@ -28,7 +29,8 @@ class OrderService(pb2_grpc.OrderServicer):
             print(f"Orderservice with id {self.id} conneced to catalog service !")
         except:
             print("Error establishing a channel with catalog service")
-
+        
+        
 
     def trade(self, request, context):
         # get stockname, quantity and order type (buy/sell)  
@@ -65,23 +67,26 @@ class OrderService(pb2_grpc.OrderServicer):
                 if status.error == pb2.NO_ERROR:
                     with self.lock.gen_wlock() as wlock:
                         self.transaction_number  += 1
-                        # send update other replicas of order service
                         for id, port, host in  zip(self.replica_Ids, self.replica_Ports, self.replica_Hosts):
                             if self.id == id:
                                 continue
-                            order_channel = grpc.insecure_channel(f"{host}:{port}")
-                            stub = pb2_grpc.OrderStub(order_channel)
-                            result = stub.update_db(pb2.syncRequestMessage(transaction_number=self.transaction_number, stockname=stockname, quantity=quantity, type=order_type))
-                            if result.error == pb2.NO_ERROR:
-                                order_channel.close()
-                            else:
-                                print("Error syncing transactions")
-                                order_channel.close()
+                            try:
+                                order_channel = grpc.insecure_channel(f"{host}:{port}")
+                                stub = pb2_grpc.OrderStub(order_channel)
+                                
+                                result = stub.update_db(pb2.syncRequestMessage(transaction_number=self.transaction_number, stockname=stockname, quantity=quantity, type=order_type))
+                                if result.error == pb2.NO_ERROR:
+                                    order_channel.close()
+                                else:
+                                    print("Error syncing transactions")
+                                    order_channel.close()
+                            except:
+                                continue
                         # open log file and append the latest transaction to it
                         with open(self.file_path+f"transaction_log_{str(self.id)}.txt", "a") as transaction_logs:
                             transaction_str = str(f"{self.transaction_number} - Stockname: {stockname}  Quantity: {quantity} Order: {order_type}\n")
                             transaction_logs.write(transaction_str)
-                     # send appropriate error code (for no error) and transaction number back to front end server
+                        # send appropriate error code (for no error) and transaction number back to front end server
                     return pb2.tradeResponseMessage(error=pb2.NO_ERROR, transaction_number=self.transaction_number)
                 # else forward the error to front end server to send appropriate response to client
                 else:
@@ -98,10 +103,11 @@ class OrderService(pb2_grpc.OrderServicer):
         self.transaction_number = request.transaction_number
         try:
             # open log file and append the latest transaction to it
-            print("Sync follower")
+            print("Update follower")
             with open(self.file_path+f"transaction_log_{str(self.id)}.txt", "a") as transaction_logs:
-                transaction_str = str(f"{self.transaction_number} - Stockname: {stockname}  Quantity: {quantity} Order: {order_type}\n")
-                transaction_logs.write(transaction_str)
+                with self.lock.gen_wlock() as wlock:
+                    transaction_str = str(f"{self.transaction_number} - Stockname: {stockname}  Quantity: {quantity} Order: {order_type}\n")
+                    transaction_logs.write(transaction_str)
             return pb2.syncResponseMessage(error=pb2.NO_ERROR)
         except:
             return pb2.syncResponseMessage(error=pb2.DB_UPDATE_ERROR)   
@@ -140,38 +146,43 @@ class OrderService(pb2_grpc.OrderServicer):
     def setLeader(self, request:pb2.leaderMessage, context):
         try:
             leaderId = request.leaderId
-            print("Leader Id set to : ", leaderId)
             self.replica_Ids = request.replica_Ids
             self.replica_Ports = request.replica_Ports
             self.replica_Hosts = request.replica_Hosts
+            print("Leader Id set to : ", leaderId)
             return pb2.leaderResponse(result=True)
         except:
             return pb2.leaderResponse(result=False)
 
     # Method to synchronize database from other replicas after service instances recovers/restarts
-    def synchronize_database(self, request, context):
+    def synchronize_database(self):
         print("Sync database")
-        self.replica_Ids = request.replica_Ids
-        self.replica_Ports = request.replica_Ports
-        self.replica_Hosts = request.replica_Hosts
-
+        self.replica_Ids = [int(x) for x in os.getenv("ORDER_ID").split(",")]
+        self.replica_Ports = [int(x) for x in os.getenv("ORDER_PORTS").split(",")]
+        self.replica_Hosts = list(os.getenv("ORDER_HOSTS").split(","))
+        
         with open(self.file_path+f"transaction_log_{str(self.id)}.txt", "r+") as transaction_logs:
             try:
                 # get the last transaction number curently in own database
                 last_order_number = 0
-                last_line = transaction_logs.readlines()[-1]
-                if last_line:
-                    last_order_number = int(last_line.split(" ")[0])
+                if transaction_logs.read(1):
+                    # transaction_logs.seek(0)
+                    last_line = transaction_logs.readlines()[-1]
+                    if last_line:
+                        last_order_number = int(last_line.split(" ")[0])
                 
                 transaction_number = last_order_number
-                
-                # contact other replicas to search for any updates 
                 for id, port, host in zip(self.replica_Ids, self.replica_Ports, self.replica_Hosts):
+                    # contact other replicas to search for any updates  
                     if self.id == id:
                         continue
-                    channel = grpc.insecure_channel(f"{host}:{port}")
-                    order_stub = pb2_grpc.OrderStub(channel)
-                    result = order_stub.lookupOrder(pb2.lookupOrderRequestMessage(order_number=transaction_number))
+                    try:
+                        channel = grpc.insecure_channel(f"{host}:{port}")
+                        order_stub = pb2_grpc.OrderStub(channel)
+                        result = order_stub.lookupOrder(pb2.lookupOrderRequestMessage(order_number=transaction_number))
+                    except:
+                        # print("Error channel conn")
+                        continue
                     if result.error == pb2.NO_ERROR:
                         # if any updates to transaction logs, get the updates 
                         update_result = order_stub.send_db_data(pb2.dataRequestMessage(transaction_number=transaction_number))
@@ -180,8 +191,7 @@ class OrderService(pb2_grpc.OrderServicer):
                             for line in transaction_str:
                                 # write the updates to own database file
                                 transaction_logs.write(line)  
-                            return pb2.recoveryResponseMessage(error=pb2.NO_ERROR)
-                
+                            return pb2.recoveryResponseMessage(error=pb2.NO_ERROR)                    
                 return pb2.recoveryResponseMessage(error=pb2.DB_UPDATE_ERROR)              
             except:
                 return (pb2.recoveryResponseMessage(error=pb2.DB_UPDATE_ERROR))
@@ -190,19 +200,23 @@ class OrderService(pb2_grpc.OrderServicer):
     def send_db_data(self, request, context):
         transaction_number = request.transaction_number
         db_start = -1
-        with open(self.file_path+f"transaction_log_{str(self.id)}.txt", "r") as transaction_logs:
-            logs = transaction_logs.readlines()
-
-            for i, line in enumerate(logs):
-                if str(transaction_number) in line:
-                    db_start = i
-                    break
-            
-            if db_start >= 0:
-                transaction_str = logs[db_start+1:]
-                return pb2.dataResponseMessage(error=pb2.NO_ERROR, transaction_str=transaction_str)
-        
-        return pb2.dataResponseMessage(error=pb2.DB_UPDATE_ERROR)
+        try:
+            with open(self.file_path+f"transaction_log_{str(self.id)}.txt", "r") as transaction_logs:
+                with self.lock.gen_rlock() as rlock:
+                    logs = transaction_logs.readlines()
+                    for i, line in enumerate(logs):
+                        if str(transaction_number) in line:
+                            db_start = i
+                            break
+                
+                if db_start >= 0:
+                    transaction_str = logs[db_start+1:]
+                    if transaction_str:
+                        return pb2.dataResponseMessage(error=pb2.NO_ERROR, transaction_str=transaction_str)
+                    else:
+                        return pb2.dataResponseMessage(error=pb2.DB_UPDATE_ERROR)
+        except:
+            return pb2.dataResponseMessage(error=pb2.DB_UPDATE_ERROR)
             
 
 def serve(id, file_path, port, host="0.0.0.0", max_workers=MAX_WORKER_THRESHOLD):
