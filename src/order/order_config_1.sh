@@ -1,4 +1,4 @@
-export SERVICE_ID="6"
+export SERVICE_ID="5"
 export ORDER_HOST="0.0.0.0" 
 export ORDER_PORT=6001
 export CATALOG_HOST="0.0.0.0" 
