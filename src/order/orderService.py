@@ -26,7 +26,7 @@ class OrderService(pb2_grpc.OrderServicer):
             catalog_hostname = os.getenv('CATALOG_HOST', 'catalog')
             catalog_port = int(os.getenv('CATALOG_PORT', 6000))
             self.channel = grpc.insecure_channel(f"{catalog_hostname}:{catalog_port}")
-            print(f"Orderservice with id {self.id} conneced to catalog service !")
+            print(f"Order service with id {self.id} conneced to catalog service !")
         except:
             print("Error establishing a channel with catalog service")
         
@@ -143,7 +143,7 @@ class OrderService(pb2_grpc.OrderServicer):
         except:
             return pb2.checkResponse(response=False, error="Error")
 
-    # method to notify order services of eleted leader by frontend
+    # method to notify order services of elected leader by frontend
     def setLeader(self, request:pb2.leaderMessage, context):
         try:
             leaderId = request.leaderId
