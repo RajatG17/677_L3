@@ -15,7 +15,7 @@ def runLatencyTest(host, port, p):
    
     print("Probability p: " + str(p))
     client_orders = []
-    max_requests = 200
+    max_requests = 2000
 
     stock_names = ["GameStart", "FishCo", "MenhirCo", "BoarCo", "Wheely", "CarCo", "TheaterCo", "DishCo", "ConStock", "InvalidStockName"]
     trade_types = ["buy", "sell"]

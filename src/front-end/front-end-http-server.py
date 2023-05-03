@@ -12,6 +12,7 @@ import json
 from sys import argv
 import threading
 import os
+from numpy import * 
 
 order_Ports = list(int(x) for x in list(os.getenv("ORDER_PORTS").split(",")))
 order_Hosts = list(os.getenv("ORDER_HOSTS").split(","))
@@ -21,36 +22,56 @@ order_channel = None
 leader_Id = -1
 orderService = None
 
+if len(order_Ids)>0:
+        
+        order_Hosts_copy = order_Hosts.copy()
+        order_Ports_copy = order_Ports.copy()
+        order_Ids_copy = order_Ids.copy()
+        print('Copied List:', order_Hosts_copy)
+        while len(order_Ids_copy)>0:
+            max_id = max(order_Ids_copy)
+            order_host, order_port = order_Hosts_copy.pop(order_Ids_copy.index(max_id)), order_Ports_copy.pop(order_Ids_copy.index(max_id))
+            order_Ids_copy.remove(max_id)
+            #self.order_host, self.order_port = self.order_Hosts.pop(self.order_Ids.index(max_id)), self.order_Ports.pop(self.order_Ids.index(max_id))
+            # print(f"Order service leader with id {max_id} selected, proceeding to connect and notify other replicas...")
+            # print ("Connecting to order service at host:" + self.order_host + " ,port: " + str(self.order_port) + " with id " + str(max_id))
+            order_channel = grpc.insecure_channel(f"{order_host}:{order_port}")
+            o_stb = pb2_grpc.OrderStub(order_channel)
+            # check if service responsive
+            try:
+                result = o_stb.healthCheck(pb2.checkMessage(ping="health check"))
+                if result.response:
+                    result = o_stb.setLeader(pb2.leaderOrderMessage(leaderId=max_id, replica_Ids=order_Ids, replica_Ports=order_Ports, replica_Hosts=order_Hosts))
+                    for id, port, host in zip(order_Ids, order_Ports, order_Hosts):
+                        if id == max_id:
+                            continue
+                        print("Connecting to : ",id, host, port)
+                        try:
+                            channel = grpc.insecure_channel(f"{host}:{port}")
+                            o_stb = pb2_grpc.OrderStub(channel)
+                            # notify order services of elected leader
+                            result = o_stb.setLeader(pb2.leaderOrderMessage(leaderId=max_id, replica_Ids=order_Ids, replica_Ports=order_Ports, replica_Hosts=order_Hosts))
+                            channel.close()
+                        except:
+                            # if unable to establish connection, continue
+                            continue
+                    # order_Ids_copy.remove(max_id)
+                    # self.order_Hosts.remove(self.order_host)
+                    # self.order_Ports.remove(self.order_port)
+                    leader_Id = max_id
+                    break
+                else:
+                    print("Error setting leader, retrying..")
+            except:
+                print("Error setting leader, retrying..")   
+else:
+        print("All replicas down!!")
 
-    
-max_id = max(order_Ids)
-order_host, order_port = order_Hosts[order_Ids.index(max_id)], order_Ports[order_Ids.index(max_id)]
+if (leader_Id == -1):
+    print("All replicas down!!")
+
 # print(f"Order service leader with id {max_id} selected, proceeding to connect and notify other replicas...")
 # print ("Connecting to order service at host:" + self.order_host + " ,port: " + str(self.order_port) + " with id " + str(max_id))
-order_channel = grpc.insecure_channel(f"{order_host}:{order_port}")
-o_stb = pb2_grpc.OrderStub(order_channel)
-# check if service responseive
-result = o_stb.healthCheck(pb2.checkMessage(ping="health check"))
-if result.response:
-    result = o_stb.setLeader(pb2.leaderOrderMessage(leaderId=max_id, replica_Ids=order_Ids, replica_Ports=order_Ports, replica_Hosts=order_Hosts))
-    for id, port, host in zip(order_Ids, order_Ports, order_Hosts):
-        if id == max_id:
-            continue
-        print("Connecting to : ",id, host, port)
-        try:
-            channel = grpc.insecure_channel(f"{host}:{port}")
-            o_stb = pb2_grpc.OrderStub(channel)
-            # notify orer services of elected leader
-            result = o_stb.setLeader(pb2.leaderOrderMessage(leaderId=max_id, replica_Ids=order_Ids, replica_Ports=order_Ports, replica_Hosts=order_Hosts))
-            channel.close()
-        except:
-            # if unable to establish connection, add that service to list of stopped/ crashed services
-            down_services.append([id, host, port])
-            continue
-leader_Id = max_id
-order_Ids.remove(max_id)
-order_Hosts.remove(order_host)
-order_Ports.remove(order_port)
        
 
 # LRU Cache Class to store stockname lookups
@@ -118,7 +139,7 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
         self.order_port = order_port
         
         self.orderService = pb2_grpc.OrderStub(self.order_channel)
-        self.order_recover_sync()
+        #self.order_recover_sync()
         if self.leaderId < 0:
             print("Error connecting to all order service instances")
         # except:
@@ -230,12 +251,22 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
         elif (parsed_path[1] == "orders"):
             # Obtain the order number from the parsed URL/path "/orders/<order_number>"
             order_number = int(parsed_path[2])
-
-            # make lookup call to order service
-            print("Making lookup call to Order service for order number: " + str(order_number))
-            result = self.orderService.lookupOrder(pb2.lookupOrderRequestMessage(order_number=order_number))
+            
+            try:
+                # make lookup call to order service
+                try:
+                    print("Making lookup call to Order service for order number: " + str(order_number))
+                    result = self.orderService.lookupOrder(pb2.lookupOrderRequestMessage(order_number=order_number))
+                except:
+                    self.leaderId = self.leader_election()
+                    self.orderService = pb2_grpc.OrderStub(self.order_channel)
+                    result = self.orderService.lookupOrder(pb2.lookupOrderRequestMessage(order_number=order_number))
+            except:
+                print("All replicas down")
+                return
+            
             print("Response received from the back-end Order service:")
-            print(result)		
+            print(result)
 
             if result.error == pb2.NO_ERROR:
                 # Return JSON reply with a top-level data object
@@ -276,7 +307,7 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
 
     def do_POST(self):
         
-        self.order_recover_sync()
+        #self.order_recover_sync()
         # Read the JSON object attached by the client to the POST request
         length = int(self.headers["Content-Length"])
         request = json.loads(self.rfile.read(length).decode('utf-8'))
@@ -305,19 +336,23 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
         order_type = request["type"]
         
         # make trade call to order service
-        try:	
-            result = self.orderService.trade(pb2.tradeRequestMessage(stockname=stockname, quantity=quantity, type=order_type))
-            # if not result.error:
-            # 	# elect new leader
-            # 	self.leaderId = self.leader_election(self.running_order_ids)
-            # 	self.orderService = pb2_grpc.OrderStub(self.order_channel)
-            # 	response = self.orderService.healthCheck(pb2.checkMessage(ping="health check"))
+        try:
+            try:	
+                result = self.orderService.trade(pb2.tradeRequestMessage(stockname=stockname, quantity=quantity, type=order_type))
+                # if not result.error:
+                # 	# elect new leader
+                # 	self.leaderId = self.leader_election(self.running_order_ids)
+                # 	self.orderService = pb2_grpc.OrderStub(self.order_channel)
+                # 	response = self.orderService.healthCheck(pb2.checkMessage(ping="health check"))
+            except:
+                # if not able to communicate with current leader, elect a new leader, and continue trade
+                #self.down_services.append([self.leaderId, self.order_host, self.order_port])
+                self.leaderId = self.leader_election()
+                self.orderService = pb2_grpc.OrderStub(self.order_channel)
+                result = self.orderService.trade(pb2.tradeRequestMessage(stockname=stockname, quantity=quantity, type=order_type))
         except:
-            # if not able to communicate with current leader, elect a new leader, and continue trade
-            self.down_services.append([self.leaderId, self.order_host, self.order_port])
-            self.leaderId = self.leader_election()
-            self.orderService = pb2_grpc.OrderStub(self.order_channel)
-            result = self.orderService.trade(pb2.tradeRequestMessage(stockname=stockname, quantity=quantity, type=order_type))
+               print("All replicas down")
+               return    
 
         # result = self.orderService.trade(pb2.tradeRequestMessage(stockname=stockname, quantity=quantity, type=order_type))
         print("Response received from the back-end Order service:")
@@ -352,42 +387,53 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
 
     # method to pick a leader from currently running order services based on their id
     def leader_election(self):
+        print("Leader election")
         if not len(self.order_Ids)>0:
             print("All replicas down!!")
             return -999
         
-        
-        max_id = max(self.order_Ids)
-        self.order_host, self.order_port = self.order_Hosts.pop(self.order_Ids.index(max_id)), self.order_Ports.pop(self.order_Ids.index(max_id))
-        # print(f"Order service leader with id {max_id} selected, proceeding to connect and notify other replicas...")
-        # print ("Connecting to order service at host:" + self.order_host + " ,port: " + str(self.order_port) + " with id " + str(max_id))
-        self.order_channel = grpc.insecure_channel(f"{self.order_host}:{self.order_port}")
-        o_stb = pb2_grpc.OrderStub(self.order_channel)
-        # check if service responseive
-        result = o_stb.healthCheck(pb2.checkMessage(ping="health check"))
-        if result.response:
-            result = o_stb.setLeader(pb2.leaderOrderMessage(leaderId=max_id, replica_Ids=self.order_Ids, replica_Ports=self.order_Ports, replica_Hosts=self.order_Hosts))
-            for id, port, host in zip(self.order_Ids, self.order_Ports, self.order_Hosts):
-                if id == max_id:
-                    continue
-                print("Connecting to : ",id, host, port)
-                try:
-                    channel = grpc.insecure_channel(f"{host}:{port}")
-                    o_stb = pb2_grpc.OrderStub(channel)
-                    # notify orer services of elected leader
+        order_Hosts_copy = self.order_Hosts.copy()
+        order_Ports_copy = self.order_Ports.copy()
+        order_Ids_copy = self.order_Ids.copy()
+        while len(order_Ids_copy)>0:
+            if not len(order_Ids_copy)>0:
+                print("All replicas down!!")
+                return -999
+            max_id = max(order_Ids_copy)
+            self.order_host, self.order_port = order_Hosts_copy.pop(order_Ids_copy.index(max_id)), order_Ports_copy.pop(order_Ids_copy.index(max_id))
+            order_Ids_copy.remove(max_id)
+            #self.order_host, self.order_port = self.order_Hosts.pop(self.order_Ids.index(max_id)), self.order_Ports.pop(self.order_Ids.index(max_id))
+            # print(f"Order service leader with id {max_id} selected, proceeding to connect and notify other replicas...")
+            # print ("Connecting to order service at host:" + self.order_host + " ,port: " + str(self.order_port) + " with id " + str(max_id))
+            self.order_channel = grpc.insecure_channel(f"{self.order_host}:{self.order_port}")
+            o_stb = pb2_grpc.OrderStub(self.order_channel)
+            try:
+                # check if service responsive
+                result = o_stb.healthCheck(pb2.checkMessage(ping="health check"))
+                if result.response:
                     result = o_stb.setLeader(pb2.leaderOrderMessage(leaderId=max_id, replica_Ids=self.order_Ids, replica_Ports=self.order_Ports, replica_Hosts=self.order_Hosts))
-                    channel.close()
-                except:
-                    # if unable to establish connection, add that service to list of stopped/ crashed services
-                    self.down_services.append([id, host, port])
-                    continue
-            self.order_Ids.remove(max_id)
-            # self.order_Hosts.remove(self.order_host)
-            # self.order_Ports.remove(self.order_port)
-            return max_id
-        else:
-            print("Error setting leader, retrying..")
-            self.leaderId = self.leader_election()
+                    for id, port, host in zip(self.order_Ids, self.order_Ports, self.order_Hosts):
+                        if id == max_id:
+                            continue
+                        print("Connecting to : ",id, host, port)
+                        try:
+                            channel = grpc.insecure_channel(f"{host}:{port}")
+                            o_stb = pb2_grpc.OrderStub(channel)
+                            # notify order services of elected leader
+                            result = o_stb.setLeader(pb2.leaderOrderMessage(leaderId=max_id, replica_Ids=self.order_Ids, replica_Ports=self.order_Ports, replica_Hosts=self.order_Hosts))
+                            channel.close()
+                        except:
+                            # if unable to establish connection, continue
+                            continue
+                    # order_Ids_copy.remove(max_id)
+                    # self.order_Hosts.remove(self.order_host)
+                    # self.order_Ports.remove(self.order_port)
+                    return max_id
+                else:
+                    print("Error setting leader, retrying..")
+            except:
+                print("Error setting leader, retrying..")
+            
 
     def try_sync_recovered_services(self):
         print("Trying to connect downed order services if any...")
@@ -403,7 +449,6 @@ class MyHTTPHandlerClass(http.server.BaseHTTPRequestHandler):
                         # add id, host, and port of recovered service to list of online services
                         self.order_Ids.append(int(service[0]))
                         self.order_Hosts.append(service[1])
-                        self.order_Ports.append(int(service[2]))
                         # notify recovered service of current leader
                         result = stub.setLeader(pb2.leaderOrderMessage(leaderId=self.leaderId, replica_Ids=self.order_Ids, replica_Ports=self.order_Ports, replica_Hosts=self.order_Hosts))
                         # notify current leader of id, host and port of recovered service
