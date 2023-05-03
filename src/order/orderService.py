@@ -160,7 +160,7 @@ class OrderService(pb2_grpc.OrderServicer):
         print("Sync database")
         self.replica_Ids = [int(x) for x in os.getenv("ORDER_ID").split(",")]
         self.replica_Ports = [int(x) for x in os.getenv("ORDER_PORTS").split(",")]
-        self.replica_Hosts = list(os.getenv("ORDER_HOSTS").split(","))
+        self.replica_Hosts = list(os.getenv("ORDER_HOSTS", "0.0.0.0,0.0.0.0,0.0.0.0").split(","))
         
         with open(self.file_path+f"transaction_log_{str(self.id)}.txt", "r+") as transaction_logs:
             try:
