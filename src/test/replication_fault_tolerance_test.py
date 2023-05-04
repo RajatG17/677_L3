@@ -7,7 +7,9 @@ import sys
 import json
 from sys import argv
 import random
-
+import threading
+import multiprocessing
+import time
 
 def decode_response (response):
     return json.loads(response.decode('utf-8'))
@@ -23,7 +25,21 @@ myvar = {'CATALOG_PORT': "6000",'SERVICE_ID': "8",'ORDER_PORT': "6003",'ORDER_PO
 env.update(myvar)
 
 # Kill highest service id replica/leader
-#os.system("sudo kill -9 $(sudo lsof -t -i:6003)")
+
+
+# Find the PID of the process listening on port 8080
+lsof_output = subprocess.check_output(['lsof', '-t', '-i', ':6003'])
+
+pid = int(lsof_output.decode('utf-8').strip())
+
+print(pid)
+
+print("Killing order service leader")
+
+# Kill the process
+subprocess.call(['sudo', 'kill', '-9', str(pid)])
+
+print("Killed order service leader")
 
 stock_names = ["GameStart", "FishCo", "MenhirCo", "BoarCo"]
 trade_types = ["buy", "sell"]
@@ -52,6 +68,19 @@ while (True):
         data_json_obj = decode_response(data)
         print("data: ")
         print(data_json_obj)
+
+        assert response.status == 200
+
+        # Send order query request
+        transaction_number = random.randint(1, 6)
+        print ("Sending Lookup Order request for order number: " + str(transaction_number))
+        url = "/orders/" + str(transaction_number)
+        conn.request("GET", url)						
+        response = conn.getresponse()
+        data = response.read()
+        data_json_obj = json.loads(data.decode('utf-8'))
+        print ("Response: ")
+        print(data_json_obj)
         
         assert response.status == 200
 
@@ -59,10 +88,46 @@ conn.close()
 
 print("Order requests served after even killing the order service leader")
 
+print("Restarting old order service leader")
+
 # Start a new order replica on the same port.
 
-subprocess.Popen(["python3", "orderService.py"], env=env, close_fds=True, cwd="../order/",stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+pid = os.fork()
+if pid == 0:
+        # child process
+        subprocess.call(['python3', 'orderService.py'], env=env, cwd="../order/", close_fds=True, stdout=subprocess.PIPE)
+        os._exit(0)
 
-time.sleep(5)
+print("Restarted old order service leader")
+
+time.sleep(10)
+
+replica_Ids = [5, 6, 8]
+        
+last_transaction = 0
+
+for id in replica_Ids:       
+    with open(f"../data/transaction_log_{str(id)}.txt", "r+") as transaction_logs:
+        try:
+                # get the last transaction number curently in own database
+                last_order_number = 0
+                if transaction_logs.read(1):
+                    last_line = transaction_logs.readlines()[-1]
+                    if last_line:
+                        last_order_number = int(last_line.split(" ")[0])
+                
+                transaction_number = last_order_number
+                print("transaction_number: " + str(transaction_number))
+                if (last_transaction != 0):
+                    assert transaction_number == last_transaction
+                last_transaction = transaction_number
+        except:
+                print("Error reading file")
+
+print ("All replicas have the same database content and are synchronized")
+
+print("Killing order service leader")
 
 os.system("sudo kill -9 $(sudo lsof -t -i:6003)")
+
+print("Killed order service leader")
